@@ -51,8 +51,8 @@ int main(int argc,char **argv){
             if(owner.fd<0||flock(owner.fd,LOCK_EX|LOCK_NB)<0)throw std::runtime_error("client_already_running");
             VoiceDaemon daemon(state,action=="serve-test");daemon.serve();return 0;
         }
-        if(action=="url"){
-            auto auth=read_json(state/"ui-auth.json");
+        if(action=="url"||action=="reset-panel"){
+            auto auth=control_auth(state,action=="reset-panel");
             std::cout<<json{{"port",control_port},{"pairing_code",auth["code"]}}.dump()<<"\n";return 0;
         }
         if(action=="status"){

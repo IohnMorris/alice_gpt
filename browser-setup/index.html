@@ -1,1 +1,1014 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="panel-token" content="__TOKEN__"><title>Установка ChatGPT Voice</title><link rel="stylesheet" href="/style.css"><script defer src="/app.js"></script></head><body><main><header><div><p class="eyebrow">ALISA VOICE · MINI 2</p><h1>Установка голосового чата</h1><p class="subtitle">Подключите колонку и войдите в ChatGPT. После установки голосовой чат работает без компьютера.</p></div></header><section class="status"><span class="dot on"></span><div><strong id="phase">Готово к подключению</strong><p id="message">Установка работает на этом компьютере.</p></div></section><section class="card wide" id="panel-card" hidden><h2>Панель на телефоне</h2><p>Телефон и колонка должны быть в одной домашней Wi‑Fi сети.</p><p><a id="panel-url" target="_blank" rel="noopener"></a></p><p>Код сопряжения: <strong id="panel-code"></strong></p></section><div class="grid" style="margin-top:18px"><section class="card wide" id="step-connect"><h2>1. Подключение к колонке <span class="step-badge" id="badge-connect">Ожидает</span></h2><p>Нужна колонка с заранее полученными root и SSH. Пароль или приватный ключ вводится только в локальном мастере. Пароль хранится в памяти мастера до его закрытия. Ключ должен быть уже разрешён на колонке; защищённые паролем ключи пока не поддерживаются.</p><div class="fields"><label>IP-адрес<input id="host" placeholder="192.168.1.50" autocomplete="off"></label><label>Порт SSH<input id="port" type="number" value="2222" min="1" max="65535"></label></div><button id="fingerprint">Проверить отпечаток SSH</button><p id="fingerprintValue"></p><div class="fields"><label>Пароль SSH<input id="password" type="password" autocomplete="off"></label><label>Или приватный SSH-ключ<textarea id="privateKey" rows="4" autocomplete="off" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea></label></div><label class="check"><input type="checkbox" id="blankPassword"> SSH без пароля (только если это настроено на колонке)</label><label class="check"><input type="checkbox" id="existingKey"> Использовать ключ, сохранённый на этом компьютере (без пароля)</label><button id="connect" disabled>Подтвердить отпечаток и подключиться</button></section><section class="card" id="step-install"><h2>2. Установка <span class="step-badge" id="badge-install">Ожидает</span></h2><p>Проверим совместимость, сохраним существующие чаты и включим автозапуск.</p><button id="install" disabled>Установить на колонку</button></section><section class="card" id="step-login"><h2>3. Вход в ChatGPT <span class="step-badge" id="badge-login">Ожидает</span></h2><p>Вход откроется в отдельном окне браузера. Пароль ChatGPT вводится только на сайте ChatGPT. Если вход уже сохранён, нажмите «Войти заново» для проверки с чистым профилем. Прежняя сессия сохранится до успешного входа.</p><button id="login" disabled>Войти в ChatGPT</button></section><section class="card wide"><h2>Уже настроено?</h2><p>Можно проверить текущую установку без замены данных.</p><button id="current">Проверить службу</button></section></div><footer>Страница работает только на этом компьютере. Получение root не выполняется автоматически.</footer></main></body></html>
+<!doctype html>
+<html lang="ru">
+<head><meta name="panel-token" content="__TOKEN__">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#18231f" />
+<title>ALISA VOICE · MINI 2 — Установка голосового чата</title>
+<style>
+  :root {
+    --ink: #202b27;
+    --muted: #77817b;
+    --muted-2: #98a19a;
+    --line: #e5e9e4;
+    --paper: #f5f7f4;
+    --surface: #ffffff;
+    --forest: #345b4b;
+    --forest-deep: #244436;
+    --sage: #eaf1eb;
+    --amber: #bd8b52;
+    --red: #a75c52;
+    --sidebar: #18231f;
+    --sidebar-2: #26332d;
+    --shadow: 0 12px 34px rgba(27, 43, 34, .055);
+    --radius: 9px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px; line-height: 1.5; letter-spacing: -.01em;
+  }
+  button, input, select, textarea { font: inherit; }
+  button { cursor: pointer; }
+  .app { min-height: 100vh; display: grid; grid-template-columns: 252px minmax(0, 1fr); }
+
+  /* Sidebar — 1:1 with station-panel.html */
+  .sidebar {
+    background: var(--sidebar); color: #edf2ed; min-height: 100vh; padding: 27px 17px 20px;
+    display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; padding: 0 10px 30px; }
+  .brand-mark { width: 34px; height: 34px; border: 1px solid rgba(225,239,228,.3); display:grid; place-items:center; border-radius: 8px; color:#c6d9ca; flex: none; }
+  .brand-mark svg { width: 18px; height: 18px; }
+  .brand-name { font-size: 14px; font-weight: 650; letter-spacing: -.025em; }
+  .brand-caption { font-size: 10px; color: #91a197; margin-top: 2px; letter-spacing: .11em; text-transform: uppercase; }
+  .nav-label { padding: 0 11px; margin: 10px 0 9px; color: #7e9186; font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+  .nav { display: grid; gap: 4px; }
+  .nav button {
+    width: 100%; height: 42px; display: flex; align-items: center; gap: 11px; text-align: left;
+    color: #b5c1b9; border: 1px solid transparent; background: transparent; border-radius: 6px;
+    padding: 0 11px; font-size: 13px; transition: .18s ease;
+  }
+  .nav button:hover { color: #fff; background: rgba(255,255,255,.055); }
+  .nav button.active { color: #f7fbf7; background: #293a31; border-color: #35483d; }
+  .nav svg { width: 16px; height: 16px; opacity: .84; flex: none; }
+  .nav-badge {
+    margin-left: auto; font-size: 10px; font-weight: 700; padding: 2px 6px;
+    border-radius: 4px; background: rgba(109, 154, 120, .18); color: #9ec5a7;
+    border: 1px solid rgba(109, 154, 120, .28); line-height: 1.2;
+  }
+  .nav-badge.pending {
+    background: rgba(189, 139, 82, .16); color: #deb484; border-color: rgba(189, 139, 82, .28);
+  }
+  .sidebar-switch {
+    margin-top: 18px; padding: 12px 11px; background: rgba(255,255,255,.03);
+    border: 1px solid rgba(225,239,228,.08); border-radius: 7px;
+  }
+  .sidebar-switch-label {
+    font-size: 10px; color: #7e9186; text-transform: uppercase; letter-spacing: .12em;
+    font-weight: 700; margin-bottom: 8px; display: block;
+  }
+  .mode-pills { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .mode-pill {
+    height: 28px; border-radius: 5px; border: 1px solid transparent; background: transparent;
+    color: #9ab0a2; font-size: 11px; font-weight: 600; transition: .16s ease;
+  }
+  .mode-pill:hover { color: #fff; }
+  .mode-pill.active { background: #293a31; color: #f2f7f3; border-color: #394d42; }
+
+  .sidebar-bottom { margin-top: auto; padding: 18px 10px 2px; border-top: 1px solid rgba(225,239,228,.1); }
+  .device-kicker { color: #7e9186; font-size: 10px; text-transform: uppercase; letter-spacing: .13em; margin-bottom: 7px; }
+  .device-name { font-size: 12px; color: #e8eee9; font-weight: 600; }
+  .device-meta { color: #92a197; font-size: 11px; margin-top: 3px; }
+
+  /* Main & Topbar */
+  .main { min-width: 0; }
+  .topbar {
+    height: 76px; display:flex; align-items:center; justify-content:space-between;
+    padding: 0 42px; border-bottom:1px solid var(--line); background: rgba(255,255,255,.74);
+    backdrop-filter: blur(8px); position: sticky; top: 0; z-index: 4;
+  }
+  .crumb { display:flex; align-items:center; gap:9px; font-size:12px; color:var(--muted); }
+  .crumb strong { color:var(--ink); font-weight:600; }
+  .top-right { display:flex; align-items:center; gap:14px; }
+  .local-label { color:#7d8880; font-size:11px; letter-spacing:.04em; display:flex; align-items:center; }
+  .local-dot { display:inline-block; width:7px; height:7px; margin-right:7px; background:#6d9a78; border-radius:50%; box-shadow:0 0 0 3px #eaf2eb; }
+  .avatar { width:30px; height:30px; display:grid; place-items:center; background:#e9eee8; color:#45604e; border-radius:7px; font-size:11px; font-weight:700; }
+
+  /* Content */
+  .content { max-width: 1180px; margin:0 auto; padding: 38px 42px 60px; }
+  .page-head { display:flex; justify-content:space-between; align-items:flex-end; gap:24px; margin-bottom:28px; }
+  .eyebrow { color:var(--forest); font-size:10px; font-weight:750; letter-spacing:.16em; text-transform:uppercase; margin-bottom:9px; }
+  h1 { font-size:30px; line-height:1.12; letter-spacing:-.045em; margin:0; font-weight:650; }
+  .subtitle { color:var(--muted); margin:9px 0 0; font-size:13px; max-width: 640px; }
+  .head-meta { text-align:right; color:var(--muted); font-size:11px; flex: none; }
+  .head-meta strong { display:block; color:var(--ink); font-size:12px; font-weight:600; margin-top:3px; }
+
+  /* Status Banner Card */
+  .status-card {
+    display:flex; align-items:center; justify-content:space-between; gap:20px;
+    padding:20px 22px; background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:24px;
+  }
+  .status-left { display:flex; align-items:center; gap:15px; min-width:0; }
+  .status-icon {
+    width:42px; height:42px; display:grid; place-items:center;
+    background:var(--sage); color:var(--forest); border-radius:8px; flex:none;
+  }
+  .status-icon svg { width:20px; height:20px; }
+  .status-title { font-weight:650; font-size:14px; }
+  .status-sub { color:var(--muted); font-size:12px; margin-top:2px; }
+  .status-right { display:flex; align-items:center; gap:20px; flex: none; }
+  .status-value { text-align:right; }
+  .status-value small { display:block; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; }
+  .status-value strong { display:block; font-size:12px; font-weight:650; margin-top:4px; }
+
+  .state-chip {
+    padding:6px 10px; background:#edf4ee; color:#476c52; font-size:11px;
+    font-weight:650; border:1px solid #dce9dd; border-radius:5px; white-space:nowrap;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .state-chip.pending {
+    background: #faf3eb; color: #9a6c37; border-color: #ecdcc8;
+  }
+
+  /* Grid Layout */
+  .installer-grid {
+    display:grid; grid-template-columns:minmax(0, 1.52fr) minmax(300px, .88fr);
+    gap:18px; align-items: start;
+  }
+  .steps-stack { display: grid; gap: 18px; }
+  .side-stack { display:grid; gap:18px; position: sticky; top: 96px; }
+
+  /* Panels */
+  .panel {
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    transition: border-color .22s ease, box-shadow .22s ease;
+  }
+  .panel.highlight-pulse {
+    border-color: #6f9476;
+    box-shadow: 0 0 0 3px rgba(111, 148, 118, .16), var(--shadow);
+  }
+  .panel-head {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 21px 15px; border-bottom:1px solid #edf0ec; gap: 12px;
+  }
+  .panel-head-left { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .step-num {
+    width: 24px; height: 24px; border-radius: 6px; background: var(--sage);
+    color: var(--forest); font-size: 11px; font-weight: 750; display: grid;
+    place-items: center; flex: none; letter-spacing: -.02em;
+  }
+  .panel-title { font-size:13px; font-weight:700; letter-spacing:-.015em; }
+  .panel-note { color:var(--muted-2); font-size:11px; }
+  .panel-body { padding:19px 21px 21px; }
+  .step-desc { color: var(--muted); font-size: 12px; margin: 0 0 18px; line-height: 1.55; }
+
+  /* Buttons & Inputs */
+  .actions { display:flex; flex-wrap:wrap; gap:8px; align-items: center; }
+  .btn {
+    border:1px solid #dce3dc; background:#fff; color:#34423a; border-radius:5px;
+    padding:9px 13px; font-size:12px; font-weight:620; transition: .18s ease;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    text-decoration: none;
+  }
+  .btn:hover { border-color:#a9b9aa; background:#f8faf7; }
+  .btn.primary { background:var(--forest); color:#fff; border-color:var(--forest); }
+  .btn.primary:hover { background:var(--forest-deep); border-color:var(--forest-deep); }
+  .btn.ghost { border-color:transparent; background:transparent; color:var(--muted); }
+  .btn.ghost:hover { background:#f1f4f0; color:var(--ink); }
+  .btn.sm { padding: 6px 10px; font-size: 11px; }
+  .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline:2px solid #8aab91; outline-offset:2px;
+  }
+
+  .form-row { display:grid; grid-template-columns: 1.35fr .65fr; gap:14px; }
+  .field { display:grid; gap:7px; margin-bottom:15px; }
+  .field label { color:#657168; font-size:11px; font-weight:650; display: flex; justify-content: space-between; align-items: center; }
+  .field input, .field select, .field textarea {
+    width:100%; height:40px; border:1px solid #dfe5de; background:#fff;
+    border-radius:5px; padding:0 11px; color:var(--ink); font-size: 13px;
+  }
+  .field textarea {
+    height: 76px; padding: 9px 11px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 11px; resize: vertical; line-height: 1.45;
+  }
+  .field input::placeholder, .field textarea::placeholder { color:#a6afa8; }
+  .field-help { color:#9aa39c; font-size:11px; margin-top:-3px; }
+
+  /* Fingerprint Bar */
+  .fingerprint-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 11px 13px; background: #f8faf7; border: 1px solid #e3e9e2;
+    border-radius: 6px; margin-bottom: 18px; flex-wrap: wrap;
+  }
+  .fp-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .fp-badge {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+    padding: 3px 7px; border-radius: 4px; background: var(--sage); color: var(--forest);
+  }
+  .fp-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px; color: #46544b; word-break: break-all;
+  }
+
+  /* Auth Option Selector — matches #voice-options from station-panel.html */
+  .section-subhead {
+    color:#657168; font-size:11px; font-weight:650; margin-bottom: 9px; display: block;
+  }
+  .option-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-bottom: 15px; }
+  .option {
+    display:flex; justify-content:space-between; align-items:center; gap: 10px;
+    border:1px solid #e1e7e0; background:#fff; border-radius:6px; min-height:48px;
+    padding:8px 13px; color:#46534b; font-size:12px; text-align:left; line-height: 1.35;
+    transition: .16s ease;
+  }
+  .option:hover { border-color:#b6c6b7; background:#fafcf9; }
+  .option.selected {
+    border-color:#6f9476; background:#f0f5f0; color:#345b3f;
+    box-shadow:inset 0 0 0 1px #6f9476; font-weight: 550;
+  }
+  .check {
+    width:15px; height:15px; border:1px solid #ccd6cc; border-radius:50%;
+    display:grid; place-items:center; color:transparent; font-size:9px; flex:none;
+  }
+  .selected .check { color:white; background:#66896d; border-color:#66896d; }
+
+  .auth-pane { display: none; margin-bottom: 18px; }
+  .auth-pane.active { display: block; animation: appear .18s ease; }
+
+  .inline-info {
+    padding: 12px 14px; background: #f3f6f2; border: 1px solid #e1e8e0;
+    border-radius: 6px; font-size: 12px; color: #526056; display: flex;
+    align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .inline-info code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px; background: #e6ede6; color: #2d4739; padding: 2px 6px; border-radius: 4px;
+  }
+
+  /* Diagnostic & Checklist rows — 1:1 with station-panel.html */
+  .diagnostic { display:grid; gap:0; margin-bottom: 16px; }
+  .diagnostic-row {
+    display:grid; grid-template-columns:1fr auto; align-items:center;
+    gap:16px; padding:12px 0; border-bottom:1px solid #edf0ec;
+  }
+  .diagnostic-row:first-child { padding-top: 2px; }
+  .diagnostic-row:last-child { border-bottom:0; }
+  .diagnostic-row strong { display:block; font-size:12px; font-weight:620; }
+  .diagnostic-row small { color:var(--muted-2); font-size:10px; display:block; margin-top:2px; }
+  .diag-state { color:#5d8064; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform: uppercase; }
+  .diag-state.warn { color: var(--amber); }
+
+  .mini-line { height:3px; background:#edf1ec; margin: 4px 0 18px; border-radius:2px; overflow:hidden; }
+  .mini-line span { display:block; height:100%; width:100%; background:#87a58b; transition: width .35s ease; }
+
+  /* Phone Companion Card Elements */
+  .phone-url-box {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 9px 11px; background: #f7f9f6; border: 1px solid #dfe6de;
+    border-radius: 6px; margin-bottom: 12px;
+  }
+  .phone-url-link {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px; font-weight: 600; color: var(--forest); text-decoration: none;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .phone-url-link:hover { text-decoration: underline; }
+
+  .pairing-card {
+    padding: 14px 15px; background: var(--sage); border: 1px solid #d8e5d9;
+    border-radius: 7px; display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+  }
+  .pairing-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .12em; color: #546e5c; margin-bottom: 3px;
+  }
+  .pairing-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 20px; font-weight: 700; letter-spacing: .08em; color: var(--forest-deep);
+  }
+  .pairing-sub { font-size: 10px; color: #6c8072; margin-top: 2px; }
+
+  /* Notice Card */
+  .notice {
+    padding:15px 17px; background:#f1f4ef; border:1px solid #e3e9e1;
+    border-radius:7px; color:#647068; font-size:11px; line-height: 1.5;
+  }
+  .notice strong { color:#394a3e; display:block; font-size:12px; margin-bottom:3px; }
+
+  /* Step filter mode (when user selects single-step view) */
+  .step-panel.hidden-step { display: none; }
+
+  @keyframes appear { from {opacity:.65; transform:translateY(3px)} to {opacity:1; transform:none} }
+
+  .toast {
+    position:fixed; right:26px; bottom:24px; padding:12px 16px; color:#f7faf7;
+    background:#24352b; border:1px solid #3b5143; border-radius:6px;
+    box-shadow:0 10px 30px #15251b30; font-size:12px; opacity:0;
+    transform:translateY(8px); pointer-events:none; transition:.22s ease; z-index:10;
+  }
+  .toast.show { opacity:1; transform:none; }
+  .page-foot {
+    margin-top:26px; color:#9aa49c; font-size:10px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+  }
+
+  /* Responsive — matches station-panel.html */
+  @media (max-width: 960px) {
+    .app { grid-template-columns:76px minmax(0,1fr); }
+    .sidebar { padding:22px 10px 18px; }
+    .brand { justify-content:center; padding:0 0 28px; }
+    .brand-copy, .nav-label, .nav-text, .nav-badge, .sidebar-switch, .device-kicker, .device-name, .device-meta { display:none; }
+    .nav button { justify-content:center; padding:0; }
+    .sidebar-bottom { display:flex; justify-content:center; padding:16px 0 0; }
+    .sidebar-bottom:after { content:"M2"; color:#b8c9bd; font-size:10px; letter-spacing:.1em; }
+    .topbar { padding:0 25px; }
+    .content { padding:32px 25px 48px; }
+    .installer-grid { grid-template-columns: 1fr; }
+    .side-stack { position: static; }
+  }
+  @media (max-width: 680px) {
+    .app { display:block; }
+    .sidebar { position:sticky; z-index:5; top:0; height:auto; min-height:0; padding:10px 12px; display:block; }
+    .brand { display:none; }
+    .nav { display:flex; overflow:auto; gap:5px; }
+    .nav button { width:auto; min-width:42px; height:39px; padding:0 11px; justify-content:center; }
+    .nav button .nav-text { display:inline; font-size:11px; white-space:nowrap; }
+    .nav svg { width:14px; }
+    .sidebar-bottom { display:none; }
+    .topbar { height:55px; padding:0 17px; position: static; }
+    .local-label span { display:none; }
+    .local-dot { margin:0; }
+    .content { padding:27px 16px 38px; }
+    .page-head { align-items:flex-start; margin-bottom:20px; flex-direction: column; gap: 8px; }
+    h1 { font-size:25px; }
+    .head-meta { text-align: left; }
+    .status-card { align-items:flex-start; padding:16px; flex-direction: column; }
+    .status-right { width: 100%; justify-content: space-between; }
+    .form-row, .option-grid { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M5 8.5 12 4l7 4.5v7L12 20l-7-4.5z"/>
+          <path d="m5.5 8.7 6.5 4 6.5-4M12 12.7V20"/>
+        </svg>
+      </div>
+      <div class="brand-copy">
+        <div class="brand-name">ALISA VOICE · MINI 2</div>
+        <div class="brand-caption">Local Setup Wizard</div>
+      </div>
+    </div>
+
+    <div class="nav-label">Мастер установки</div>
+    <nav class="nav" aria-label="Навигация по установке">
+      <button class="active" data-nav="all">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+          <rect x="3.5" y="3.5" width="7" height="7" rx="1"/>
+          <rect x="13.5" y="3.5" width="7" height="7" rx="1"/>
+          <rect x="3.5" y="13.5" width="7" height="7" rx="1"/>
+          <rect x="13.5" y="13.5" width="7" height="7" rx="1"/>
+        </svg>
+        <span class="nav-text">Все этапы</span>
+      </button>
+      <button data-nav="step-1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M4 17l6-6-6-6M12 19h8"/>
+        </svg>
+        <span class="nav-text">1. Подключение</span>
+        <span class="nav-badge" id="nav-badge-1">✓</span>
+      </button>
+      <button data-nav="step-2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+        </svg>
+        <span class="nav-text">2. Установка</span>
+        <span class="nav-badge" id="nav-badge-2">✓</span>
+      </button>
+      <button data-nav="step-3">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+          <rect x="4" y="11" width="16" height="9" rx="2"/>
+          <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+        </svg>
+        <span class="nav-text">3. Вход в ChatGPT</span>
+        <span class="nav-badge" id="nav-badge-3">✓</span>
+      </button>
+      <button data-nav="phone-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+          <rect x="7" y="2.5" width="10" height="19" rx="2"/>
+          <path d="M11 18.5h2"/>
+        </svg>
+        <span class="nav-text">Панель на телефоне</span>
+      </button>
+      <button data-nav="verify-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M4 19V5m0 14h16"/>
+          <path d="m7 15 3-4 3 2 5-7"/>
+        </svg>
+        <span class="nav-text">Проверить службу</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-switch">
+      <span class="sidebar-switch-label">Демо-состояние</span>
+      <div class="mode-pills">
+        <button class="mode-pill active" id="preset-done" type="button">✓ Готово</button>
+        <button class="mode-pill" id="preset-fresh" type="button">С нуля</button>
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="device-kicker">Целевое устройство</div>
+      <div class="device-name">Яндекс Станция Mini 2</div>
+      <div class="device-meta">Локальный мастер · ARM64</div>
+    </div>
+  </aside>
+
+  <!-- MAIN AREA -->
+  <main class="main">
+    <header class="topbar">
+      <div class="crumb">
+        <span>ALISA VOICE</span><span>／</span><strong>MINI 2 · Установка</strong>
+      </div>
+      <div class="top-right">
+        <div class="local-label">
+          <i class="local-dot"></i>
+          <span>Установка работает на этом компьютере</span>
+        </div>
+        <a class="btn sm" href="station-panel.html" title="Перейти в локальную панель управления">
+          Открыть панель ↗
+        </a>
+        <div class="avatar">M2</div>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- Page Head -->
+      <div class="page-head">
+        <div>
+          <div class="eyebrow">ALISA VOICE · MINI 2</div>
+          <h1>Установка голосового чата</h1>
+          <p class="subtitle">Подключите колонку и войдите в ChatGPT. После установки голосовой чат работает без компьютера.</p>
+        </div>
+        <div class="head-meta">
+          СТАТУС УСТАНОВЩИКА
+          <strong id="head-status-text">Установка работает на этом компьютере</strong>
+        </div>
+      </div>
+
+      <!-- Status Card -->
+      <div class="status-card">
+        <div class="status-left">
+          <div class="status-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M5 12.5 9.2 17 19 7"/>
+            </svg>
+          </div>
+          <div>
+            <div class="status-title" id="banner-title">Готово к подключению</div>
+            <div class="status-sub" id="banner-sub">Установка работает на этом компьютере · все 3 шага выполнены</div>
+          </div>
+        </div>
+        <div class="status-right">
+          <div class="status-value">
+            <small>Панель управления</small>
+            <strong id="banner-ip">http://192.168.1.151:18080/</strong>
+          </div>
+          <span class="state-chip" id="banner-chip">✓ Выполнено</span>
+        </div>
+      </div>
+
+      <!-- Main Two-Column Grid -->
+      <div class="installer-grid">
+        <!-- LEFT COLUMN: 3 STEPS -->
+        <div class="steps-stack">
+
+          <!-- STEP 1: Подключение к колонке -->
+          <section class="panel step-panel" id="step-1">
+            <div class="panel-head">
+              <div class="panel-head-left">
+                <span class="step-num">01</span>
+                <div class="panel-title">1. Подключение к колонке</div>
+              </div>
+              <span class="state-chip" id="chip-step-1">✓ Выполнено</span>
+            </div>
+            <div class="panel-body">
+              <p class="step-desc">
+                Нужна колонка с заранее полученными root и SSH. Пароль или приватный ключ вводится только в локальном мастере. Пароль хранится в памяти мастера до его закрытия. Ключ должен быть уже разрешён на колонке; защищённые паролем ключи пока не поддерживаются.
+              </p>
+
+              <div class="form-row">
+                <div class="field">
+                  <label for="ssh-ip">IP-адрес</label>
+                  <input id="ssh-ip" type="text" value="192.168.1.151" placeholder="192.168.1.151" />
+                </div>
+                <div class="field">
+                  <label for="ssh-port">Порт SSH</label>
+                  <input id="ssh-port" type="number" value="22" placeholder="22" />
+                </div>
+              </div>
+
+              <!-- SSH Fingerprint Bar -->
+              <div class="fingerprint-bar">
+                <div class="fp-info">
+                  <span class="fp-badge" id="fp-status-badge">ED25519</span>
+                  <span class="fp-code" id="fp-hash">SHA256:9f4b2c8e11a7d04c5e8a33b91e2f0a1d7c6e4b2a (подтверждён)</span>
+                </div>
+                <button class="btn sm" type="button" data-action="check-fingerprint">
+                  Проверить отпечаток SSH
+                </button>
+              </div>
+
+              <!-- SSH Auth Method Options -->
+              <span class="section-subhead">Способ аутентификации SSH</span>
+              <div class="option-grid" id="ssh-auth-options">
+                <button class="option selected" type="button" data-auth="password">
+                  <span>Пароль SSH</span>
+                  <span class="check">✓</span>
+                </button>
+                <button class="option" type="button" data-auth="privkey">
+                  <span>Или приватный SSH-ключ</span>
+                  <span class="check">✓</span>
+                </button>
+                <button class="option" type="button" data-auth="passwordless">
+                  <span>SSH без пароля (только если это настроено на колонке)</span>
+                  <span class="check">✓</span>
+                </button>
+                <button class="option" type="button" data-auth="localkey">
+                  <span>Использовать ключ, сохранённый на этом компьютере (без пароля)</span>
+                  <span class="check">✓</span>
+                </button>
+              </div>
+
+              <!-- Dynamic Auth Panes -->
+              <div class="auth-pane active" id="auth-pane-password">
+                <div class="field">
+                  <label for="ssh-pass">
+                    <span>Пароль SSH</span>
+                    <span class="field-help">Хранится только в ОЗУ мастера</span>
+                  </label>
+                  <input id="ssh-pass" type="password" value="••••••••••••" placeholder="Введите пароль root для Станции" />
+                </div>
+              </div>
+
+              <div class="auth-pane" id="auth-pane-privkey">
+                <div class="field">
+                  <label for="ssh-key-text">
+                    <span>Или приватный SSH-ключ</span>
+                    <span class="field-help">Без парольной фразы (unencrypted)</span>
+                  </label>
+                  <textarea id="ssh-key-text" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;Вставьте содержимое приватного ключа или путь к файлу..."></textarea>
+                </div>
+              </div>
+
+              <div class="auth-pane" id="auth-pane-passwordless">
+                <div class="inline-info">
+                  <span>Беспарольный вход для <code>root@192.168.1.151</code> должен быть заранее разрешён в конфигурации SSH на колонке.</span>
+                </div>
+              </div>
+
+              <div class="auth-pane" id="auth-pane-localkey">
+                <div class="field">
+                  <label for="ssh-local-key">Использовать ключ, сохранённый на этом компьютере (без пароля)</label>
+                  <select id="ssh-local-key">
+                    <option value="id_ed25519">~/.ssh/id_ed25519 (OpenSSH ED25519 · без пароля)</option>
+                    <option value="id_rsa">~/.ssh/id_rsa (RSA 4096 · без пароля)</option>
+                    <option value="station_mini2">~/.ssh/station_mini2_root (специальный ключ)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="actions">
+                <button class="btn primary" type="button" data-action="connect-ssh">
+                  Подтвердить отпечаток и подключиться
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- STEP 2: Установка -->
+          <section class="panel step-panel" id="step-2">
+            <div class="panel-head">
+              <div class="panel-head-left">
+                <span class="step-num">02</span>
+                <div class="panel-title">2. Установка</div>
+              </div>
+              <span class="state-chip" id="chip-step-2">✓ Выполнено</span>
+            </div>
+            <div class="panel-body">
+              <p class="step-desc">
+                Проверим совместимость, сохраним существующие чаты и включим автозапуск.
+              </p>
+
+              <div class="diagnostic">
+                <div class="diagnostic-row">
+                  <div>
+                    <strong>Проверка совместимости окружения</strong>
+                    <small>Яндекс Станция Mini 2 · архитектура ARM64</small>
+                  </div>
+                  <span class="diag-state" id="install-row-1">СОВМЕСТИМО</span>
+                </div>
+                <div class="diagnostic-row">
+                  <div>
+                    <strong>Сохранение существующих чатов и настроек</strong>
+                    <small>Резервная копия истории разговоров и голосовых фраз</small>
+                  </div>
+                  <span class="diag-state" id="install-row-2">СОХРАНЕНО</span>
+                </div>
+                <div class="diagnostic-row">
+                  <div>
+                    <strong>Фоновая служба и автозапуск</strong>
+                    <small>Автономная работа после выключения компьютера</small>
+                  </div>
+                  <span class="diag-state" id="install-row-3">ВКЛЮЧЁН</span>
+                </div>
+              </div>
+
+              <div class="mini-line"><span id="install-progress" style="width: 100%"></span></div>
+
+              <div class="actions">
+                <button class="btn primary" type="button" data-action="install-station">
+                  Установить на колонку
+                </button>
+              </div>
+              <div class="notice" id="vless-panel" hidden style="margin-top:18px"><strong>VLESS для GPT — необязательно</strong>Если VPN уже настроен на роутере, пропустите этот пункт.<div class="field" style="margin-top:12px"><label for="vless-source">Ключ VLESS</label><input id="vless-source" placeholder="vless://…" autocomplete="off" /></div><button class="btn" type="button" id="vless-button">Подключить VLESS</button></div>
+            </div>
+          </section>
+
+          <!-- STEP 3: Вход в ChatGPT -->
+          <section class="panel step-panel" id="step-3">
+            <div class="panel-head">
+              <div class="panel-head-left">
+                <span class="step-num">03</span>
+                <div class="panel-title">3. Вход в ChatGPT</div>
+              </div>
+              <span class="state-chip" id="chip-step-3">✓ Вход сохранён</span>
+            </div>
+            <div class="panel-body">
+              <p class="step-desc">
+                Вход откроется в отдельном окне браузера. Пароль ChatGPT вводится только на сайте ChatGPT. Если вход уже сохранён, нажмите «Войти заново» для проверки с чистым профилем. Прежняя сессия сохранится до успешного входа.
+              </p>
+
+              <div class="diagnostic" style="margin-bottom: 18px;">
+                <div class="diagnostic-row">
+                  <div>
+                    <strong>Авторизация на сайте ChatGPT</strong>
+                    <small id="auth-session-sub">Прежняя сессия сохранена · токен передан на колонку</small>
+                  </div>
+                  <span class="diag-state" id="auth-session-state">ВХОД СОХРАНЁН</span>
+                </div>
+              </div>
+
+              <div class="actions">
+                <button class="btn primary" type="button" data-action="relogin-chatgpt" id="btn-chatgpt-login">
+                  Войти заново
+                </button>
+                <a class="btn ghost" href="station-panel.html">
+                  Перейти к разговорам ↗
+                </a>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- RIGHT COLUMN: PHONE PANEL & SERVICE CHECK -->
+        <aside class="side-stack">
+
+          <!-- Панель на телефоне -->
+          <div class="panel" id="phone-card">
+            <div class="panel-head">
+              <div class="panel-title">Панель на телефоне</div>
+              <span class="panel-note">Домашний Wi‑Fi</span>
+            </div>
+            <div class="panel-body">
+              <p class="step-desc" style="margin-bottom: 14px;">
+                Телефон и колонка должны быть в одной домашней Wi‑Fi сети.
+              </p>
+
+              <div class="phone-url-box">
+                <a class="phone-url-link" id="phone-url-text" href="http://192.168.1.151:18080/" target="_blank" rel="noopener">
+                  http://192.168.1.151:18080/
+                </a>
+                <div class="actions" style="gap: 5px;">
+                  <button class="btn sm" type="button" data-action="copy-url">Копировать</button>
+                </div>
+              </div>
+
+              <div class="pairing-card">
+                <div>
+                  <div class="pairing-label">Код сопряжения</div>
+                  <div class="pairing-code" id="pairing-code-display">12237648</div>
+                  <div class="pairing-sub">Для быстрого доступа с телефона</div>
+                </div>
+                <button class="btn sm" type="button" data-action="copy-code">
+                  Скопировать
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Уже настроено? / Проверить службу -->
+          <div class="panel" id="verify-card">
+            <div class="panel-head">
+              <div class="panel-title">Уже настроено?</div>
+              <span class="panel-note">Без замены данных</span>
+            </div>
+            <div class="panel-body">
+              <p class="step-desc" style="margin-bottom: 14px;">
+                Можно проверить текущую установку без замены данных.
+              </p>
+
+              <div class="diagnostic" style="margin-bottom: 16px;">
+                <div class="diagnostic-row">
+                  <div>
+                    <strong>Служба голосового чата</strong>
+                    <small>Локальный демон на колонке</small>
+                  </div>
+                  <span class="diag-state" id="service-check-1">АКТИВНА</span>
+                </div>
+                <div class="diagnostic-row">
+                  <div>
+                    <strong>Веб-панель :18080</strong>
+                    <small>Доступность в локальной сети</small>
+                  </div>
+                  <span class="diag-state" id="service-check-2">ДОСТУПНА</span>
+                </div>
+                <div class="diagnostic-row">
+                  <div>
+                    <strong>Сессия и чаты</strong>
+                    <small>Сохранённый профиль</small>
+                  </div>
+                  <span class="diag-state" id="service-check-3">БЕЗ ИЗМЕНЕНИЙ</span>
+                </div>
+              </div>
+
+              <button class="btn" style="width: 100%;" type="button" data-action="check-service">
+                Проверить службу
+              </button>
+            </div>
+          </div>
+
+          <!-- Info Notice -->
+          <div class="notice">
+            <strong>Автономная работа</strong>
+            После выполнения всех трёх шагов голосовой чат и панель на телефоне работают напрямую на Яндекс Станции Mini 2 — компьютер можно выключить.
+          </div>
+
+        </aside>
+      </div>
+
+      <div class="page-foot">
+        <span>ALISA VOICE · MINI 2 · Мастер установки голосового чата</span>
+        <span>Совместимо с локальной панелью управления (:18080)</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/app.js"></script>
+  // Toast notification (matches station-panel.html)
+  let toastTimer;
+  function toast(message) {
+    const el = document.getElementById('toast');
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+  }
+
+  // Clipboard helper compatible with iframe/local environments
+  function copyText(text, successMsg) {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => toast(successMsg)).catch(() => fallbackCopy(text, successMsg));
+    } else {
+      fallbackCopy(text, successMsg);
+    }
+  }
+  function fallbackCopy(text, successMsg) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); toast(successMsg); }
+    catch (e) { toast('Скопировано: ' + text); }
+    document.body.removeChild(ta);
+  }
+
+  // SSH Authentication Option Switcher
+  const authButtons = [...document.querySelectorAll('#ssh-auth-options .option')];
+  const authPanes = {
+    password: document.getElementById('auth-pane-password'),
+    privkey: document.getElementById('auth-pane-privkey'),
+    passwordless: document.getElementById('auth-pane-passwordless'),
+    localkey: document.getElementById('auth-pane-localkey')
+  };
+
+  authButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.auth;
+      authButtons.forEach(b => b.classList.toggle('selected', b === btn));
+      Object.entries(authPanes).forEach(([key, pane]) => {
+        pane.classList.toggle('active', key === mode);
+      });
+    });
+  });
+
+  // Live IP sync with Phone Panel URL
+  const ipInput = document.getElementById('ssh-ip');
+  const phoneUrlText = document.getElementById('phone-url-text');
+  const bannerIp = document.getElementById('banner-ip');
+
+  ipInput.addEventListener('input', () => {
+    const ip = ipInput.value.trim() || '192.168.1.151';
+    const url = `http://${ip}:18080/`;
+    phoneUrlText.textContent = url;
+    phoneUrlText.href = url;
+    bannerIp.textContent = url;
+  });
+
+  // Sidebar navigation & highlight
+  const navButtons = [...document.querySelectorAll('.nav button')];
+  const stepPanels = [...document.querySelectorAll('.step-panel')];
+
+  navButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      navButtons.forEach(b => b.classList.toggle('active', b === btn));
+      const targetId = btn.dataset.nav;
+
+      if (targetId === 'all') {
+        stepPanels.forEach(p => p.classList.remove('hidden-step'));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      // Ensure all steps are visible and scroll smoothly to the target card
+      stepPanels.forEach(p => p.classList.remove('hidden-step'));
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        targetEl.classList.add('highlight-pulse');
+        setTimeout(() => targetEl.classList.remove('highlight-pulse'), 1400);
+      }
+    });
+  });
+
+  // Preset State Switcher ("✓ Готово" vs "С нуля")
+  const presetDoneBtn = document.getElementById('preset-done');
+  const presetFreshBtn = document.getElementById('preset-fresh');
+
+  function setInstallerPreset(isDone) {
+    presetDoneBtn.classList.toggle('active', isDone);
+    presetFreshBtn.classList.toggle('active', !isDone);
+
+    const chip1 = document.getElementById('chip-step-1');
+    const chip2 = document.getElementById('chip-step-2');
+    const chip3 = document.getElementById('chip-step-3');
+    const bannerChip = document.getElementById('banner-chip');
+    const bannerTitle = document.getElementById('banner-title');
+    const bannerSub = document.getElementById('banner-sub');
+    const progress = document.getElementById('install-progress');
+    const loginBtn = document.getElementById('btn-chatgpt-login');
+
+    const nav1 = document.getElementById('nav-badge-1');
+    const nav2 = document.getElementById('nav-badge-2');
+    const nav3 = document.getElementById('nav-badge-3');
+
+    if (isDone) {
+      chip1.textContent = '✓ Выполнено'; chip1.className = 'state-chip';
+      chip2.textContent = '✓ Выполнено'; chip2.className = 'state-chip';
+      chip3.textContent = '✓ Вход сохранён'; chip3.className = 'state-chip';
+      bannerChip.textContent = '✓ Выполнено'; bannerChip.className = 'state-chip';
+      bannerTitle.textContent = 'Готово к подключению';
+      bannerSub.textContent = 'Установка работает на этом компьютере · все 3 шага выполнены';
+      progress.style.width = '100%';
+      loginBtn.textContent = 'Войти заново';
+      [nav1, nav2, nav3].forEach(b => { b.textContent = '✓'; b.classList.remove('pending'); });
+      document.getElementById('auth-session-state').textContent = 'ВХОД СОХРАНЁН';
+      document.getElementById('auth-session-state').className = 'diag-state';
+    } else {
+      chip1.textContent = 'Ожидает подключения'; chip1.className = 'state-chip pending';
+      chip2.textContent = 'Ожидает шага 1'; chip2.className = 'state-chip pending';
+      chip3.textContent = 'Ожидает входа'; chip3.className = 'state-chip pending';
+      bannerChip.textContent = 'Готово к настройке'; bannerChip.className = 'state-chip pending';
+      bannerTitle.textContent = 'Готово к подключению';
+      bannerSub.textContent = 'Установка работает на этом компьютере · выполните 3 шага по порядку';
+      progress.style.width = '18%';
+      loginBtn.textContent = 'Войти в ChatGPT';
+      [nav1, nav2, nav3].forEach((b, i) => { b.textContent = `0${i+1}`; b.classList.add('pending'); });
+      document.getElementById('auth-session-state').textContent = 'ТРЕБУЕТСЯ ВХОД';
+      document.getElementById('auth-session-state').className = 'diag-state warn';
+    }
+  }
+
+  presetDoneBtn.addEventListener('click', () => {
+    setInstallerPreset(true);
+    toast('Показано состояние завершённой установки (все шаги выполнены).');
+  });
+  presetFreshBtn.addEventListener('click', () => {
+    setInstallerPreset(false);
+    toast('Режим пошагового прохождения с нуля активирован.');
+  });
+
+  // Action Buttons
+  document.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      const ip = ipInput.value.trim() || '192.168.1.151';
+      const port = document.getElementById('ssh-port').value.trim() || '22';
+
+      if (action === 'copy-url') {
+        const url = `http://${ip}:18080/`;
+        copyText(url, `Адрес ${url} скопирован в буфер обмена.`);
+      }
+
+      if (action === 'copy-code') {
+        const code = document.getElementById('pairing-code-display').textContent.trim();
+        copyText(code, `Код сопряжения ${code} скопирован.`);
+      }
+
+      if (action === 'check-fingerprint') {
+        const fpHash = document.getElementById('fp-hash');
+        fpHash.textContent = `Запрос ключа у ${ip}:${port}...`;
+        setTimeout(() => {
+          fpHash.textContent = `SHA256:9f4b2c8e11a7d04c5e8a33b91e2f0a1d7c6e4b2a (${ip}:${port} · ED25519)`;
+          toast(`Отпечаток SSH для ${ip}:${port} успешно проверен.`);
+        }, 380);
+      }
+
+      if (action === 'connect-ssh') {
+        const chip1 = document.getElementById('chip-step-1');
+        const nav1 = document.getElementById('nav-badge-1');
+        chip1.textContent = '✓ Выполнено';
+        chip1.className = 'state-chip';
+        nav1.textContent = '✓';
+        nav1.classList.remove('pending');
+        toast(`Отпечаток подтверждён. SSH-соединение с ${ip}:${port} установлено.`);
+      }
+
+      if (action === 'install-station') {
+        const progress = document.getElementById('install-progress');
+        const chip2 = document.getElementById('chip-step-2');
+        const nav2 = document.getElementById('nav-badge-2');
+        progress.style.width = '45%';
+        toast('Проверка совместимости, сохранение чатов и настройка автозапуска...');
+        setTimeout(() => {
+          progress.style.width = '100%';
+          chip2.textContent = '✓ Выполнено';
+          chip2.className = 'state-chip';
+          nav2.textContent = '✓';
+          nav2.classList.remove('pending');
+          toast('Установка на колонку успешно завершена. Существующие чаты сохранены.');
+        }, 650);
+      }
+
+      if (action === 'relogin-chatgpt') {
+        const chip3 = document.getElementById('chip-step-3');
+        const nav3 = document.getElementById('nav-badge-3');
+        const stateEl = document.getElementById('auth-session-state');
+        toast('Открытие отдельного окна браузера для входа на сайте ChatGPT...');
+        setTimeout(() => {
+          chip3.textContent = '✓ Вход сохранён';
+          chip3.className = 'state-chip';
+          nav3.textContent = '✓';
+          nav3.classList.remove('pending');
+          stateEl.textContent = 'ВХОД СОХРАНЁН';
+          stateEl.className = 'diag-state';
+          document.getElementById('banner-chip').textContent = '✓ Выполнено';
+          document.getElementById('banner-chip').className = 'state-chip';
+        }, 600);
+      }
+
+      if (action === 'check-service') {
+        const c1 = document.getElementById('service-check-1');
+        const c2 = document.getElementById('service-check-2');
+        const c3 = document.getElementById('service-check-3');
+        c1.textContent = 'ПРОВЕРКА...';
+        c2.textContent = 'ПРОВЕРКА...';
+        setTimeout(() => {
+          c1.textContent = 'АКТИВНА';
+          c2.textContent = 'ДОСТУПНА';
+          c3.textContent = 'СОХРАНЕНЫ';
+          toast('Служба на колонке работает исправно. Данные и чаты не затронуты.');
+        }, 420);
+      }
+    });
+  });
+</script>
+</body>
+</html>

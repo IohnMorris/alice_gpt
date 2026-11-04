@@ -39,6 +39,12 @@ class PanelUrl(unittest.TestCase):
   with patch.object(runtime,'native_action',return_value={'port':'2000'}):
    with self.assertRaises(RuntimeError):runtime.panel_url(c)
 
+ def test_panel_reset_requests_a_new_pairing_code(self):
+  c=state.defaults('native');c['host']='192.168.1.50'
+  with patch.object(runtime,'native_action',return_value={'port':2000,'pairing_code':'87654321'}) as action:
+   self.assertEqual(runtime.panel_url(c,reset=True)['pairing_code'],'87654321')
+  action.assert_called_once_with(c,'reset-panel')
+
 class BridgeStatus(unittest.TestCase):
  def test_dead_bridge_is_stopped_and_old_voice_error_is_not_current(self):
   c=state.defaults('bridge');c['host']='192.0.2.44'

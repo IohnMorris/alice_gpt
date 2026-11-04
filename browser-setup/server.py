@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parent
 PACKAGE=ROOT.parent/'AlisaVoice-Mini2-test'
 sys.path[:0]=[str(PACKAGE),str(PACKAGE/'windows/vendor')]
 from alisa_cli.state import load, defaults
-from alisa_cli import winssh, install, autostart, runtime
+from alisa_cli import winssh, install, autostart, runtime, vpn
 import paramiko
 
 PORT=8769
@@ -15,7 +15,7 @@ TOKEN=secrets.token_urlsafe(32)
 LOCK=threading.Lock()
 state={'phase':'idle','message':'Ожидается подключение.'}
 pending={}
-steps={'connected':False,'installed':False,'login':False}
+steps={'connected':False,'installed':False,'vpn':False,'login':False}
 
 def publish(phase,message,panel=None):
     global state
@@ -113,34 +113,33 @@ class Handler(BaseHTTPRequestHandler):
                         if winssh.run(c,'id -u',password=password_value).stdout.strip()!=b'0':raise ValueError('SSH не даёт права root.')
                         winssh.remember_password(c,password_value)
                         save(c)
-                    pending.clear();steps.update(connected=True,installed=False,login=False)
-                    try:
-                        current=runtime.status(c)
-                        if current.get('agent_connected'):
-                            steps.update(installed=True,login=bool(current.get('login_saved')))
-                    except Exception:pass
-                    publish('connected','Подключение и права root проверены.')
+                    pending.clear();steps.update(connected=True,installed=False,vpn=False,login=False)
+                    publish('connected','Подключение и права root проверены. Нажмите «Установить» — служба будет обновлена безопасно.')
                 launch(connect,'Проверяем пароль и права root…')
             elif self.path=='/api/install':
                 if not steps['connected']:raise ValueError('Сначала подключите колонку.')
-                if steps['installed']:raise ValueError('Служба уже установлена и работает.')
                 def do_install():
                     c=load('native')
-                    try: current=runtime.status(c)
-                    except Exception: current={}
-                    if current.get('agent_connected'):
-                        steps.update(installed=True,login=bool(current.get('login_saved')))
-                        panel=runtime.panel_url(c)
-                        publish('installed','Служба уже работает. Повторная установка не требуется. Откройте панель с телефона.',panel)
-                        return
                     install.install(c,activate=True);autostart.set_enabled(c,True)
                     from alisa_cli.state import save
                     save(c);current=runtime.status(c)
                     if not current.get('agent_connected'):raise RuntimeError('service not ready')
-                    steps.update(installed=True,login=bool(current.get('login_saved')))
+                    steps.update(installed=True,vpn=bool(c.get('vpn',{}).get('enabled')),login=bool(current.get('login_saved')))
                     panel=runtime.panel_url(c)
                     publish('installed','Установлено и запущено. Автозапуск включён. Откройте панель с телефона.',panel)
-                launch(do_install,'Устанавливаем компоненты. Не закрывайте страницу…')
+                launch(do_install,'Обновляем службу на колонке. Не закрывайте страницу…')
+            elif self.path=='/api/vless':
+                if not steps['installed']:raise ValueError('Сначала установите программу на колонку.')
+                source=data.get('source','')
+                if not isinstance(source,str) or not source.strip().startswith('vless://'):raise ValueError('Вставьте полный ключ VLESS, начинающийся с vless://')
+                def configure_vless():
+                    c=load('native');result=vpn.configure(c,source.strip())
+                    c['vpn']['autostart']=bool(c.get('autostart'))
+                    autostart.station_flag(c,'vpn-autostart',c['vpn']['autostart'])
+                    from alisa_cli.state import save
+                    save(c);steps['vpn']=True
+                    publish('vpn','VLESS подключён и сохранён для GPT.')
+                launch(configure_vless,'Проверяем и подключаем VLESS…')
             elif self.path=='/api/login':
                 if not steps['installed']:raise ValueError('Сначала установите программу на колонку.')
                 change=bool(steps['login'])
@@ -154,11 +153,17 @@ class Handler(BaseHTTPRequestHandler):
                     steps['login']=True
                     publish('complete','Вход сохранён. Откройте чат на колонке и задайте вопрос.')
                 launch(do_login,'Войдите в ChatGPT в открывшемся окне браузера…')
+            elif self.path=='/api/panel-reset':
+                if not steps['connected']:raise ValueError('Сначала подключите колонку.')
+                def reset_panel():
+                    c=load('native');panel=runtime.panel_url(c,reset=True)
+                    publish('installed','Создан новый код подключения к панели.',panel)
+                launch(reset_panel,'Создаём новый код панели…')
             elif self.path=='/api/current':
                 def current():
                     c=load('native');r=runtime.status(c)
                     if not r.get('agent_connected'):raise RuntimeError('not running')
-                    steps.update(connected=True,installed=True,login=bool(r.get('login_saved')))
+                    steps.update(connected=True,installed=True,vpn=bool(c.get('vpn',{}).get('enabled')),login=bool(r.get('login_saved')))
                     panel=runtime.panel_url(c)
                     publish('installed','Установленная служба работает. Откройте панель с телефона.',panel)
                 launch(current,'Проверяем существующую установку…')

@@ -54,4 +54,13 @@ public:
         if(name.empty()||name.size()>120||name.find_first_of("\r\n\t")!=std::string::npos)throw std::runtime_error("invalid_title");
         std::lock_guard<std::mutex> lock(mutex);find(id)["title"]=name;save();
     }
+    void remove(const std::string &id){
+        std::lock_guard<std::mutex> lock(mutex);
+        auto &chats=doc["chats"];auto item=std::find_if(chats.begin(),chats.end(),[&](const json &chat){return chat.value("id",std::string())==id;});
+        if(item==chats.end())throw std::runtime_error("chat_not_found");
+        chats.erase(item);
+        if(doc.value("selected",std::string())==id)doc["selected"]="";
+        if(doc.value("previous",std::string())==id)doc["previous"]="";
+        save();
+    }
 };

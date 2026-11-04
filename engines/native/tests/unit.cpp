@@ -33,6 +33,8 @@ int main(int argc,char **argv){
     auto resumed=reloaded.select("select",a["id"]);
     assert(resumed["parent_message_id"]=="parent-a"&&resumed["voice_session_id"]=="voice-a");
     assert(resumed["account_id"]=="account-a"&&resumed["confirmed"]==true);
+    settings.remove(a["id"]);
+    assert(settings.view()["chats"].size()==1&&settings.view()["selected"]=="");
     bool rejected=false;try{settings.voice("unknown");}catch(...){rejected=true;}assert(rejected);
     auto now=std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
     assert(web_auth_current({{"access_token",token(now+3600)}}));

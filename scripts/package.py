@@ -8,7 +8,7 @@ def main():
     target=ROOT/'assets/native';target.mkdir(parents=True,exist_ok=True)
     items={'bin/alisa-standalone':NATIVE/'build/client/alisa-standalone'}
     for name in ['native_agent','vqe_tap','tts_gate','mute_gpio']:items[name+'.so']=NATIVE/'build'/(name+'.so')
-    for name in ['run.sh','profile.sh','indicator.sh']:items[name]=NATIVE/'station'/name
+    for name in ['run.sh','profile.sh','indicator.sh','panel.html']:items[name]=NATIVE/'station'/name
     items['mark.so']=ROOT/'build/mark.so'
     licenses={'webrtc-LICENSE':'webrtc-neteq/LICENSE','webrtc-PATENTS':'webrtc-neteq/PATENTS','webrtc-AUTHORS':'webrtc-neteq/AUTHORS',
       'webrtc-ooura-LICENSE':'webrtc-neteq/common_audio/third_party/ooura/LICENSE',

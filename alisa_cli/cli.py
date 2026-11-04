@@ -290,7 +290,7 @@ def main(argv=None):
             s=runtime.status(config)
             if s.get('error'):s['error_message']=friendly(s['error'])
             show(s)
-        elif action=='panel':show(runtime.panel_url(config))
+        elif action=='panel':show(runtime.panel_url(config,reset=args.operation=='reset'))
         elif action=='doctor':show(doctor.inspect(config))
         elif action=='network':show(network.check(config))
         elif action=='storage':

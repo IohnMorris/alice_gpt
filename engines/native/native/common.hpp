@@ -44,7 +44,24 @@ inline void write_json(const fs::path &path,const json &value) {
     int dir=open(path.parent_path().c_str(),O_RDONLY|O_DIRECTORY|O_CLOEXEC);
     if(dir>=0){fsync(dir);close(dir);}
 }
-inline long rss_kib() {
+
+inline void write_text(const fs::path &path,const std::string &text) {
+    fs::create_directories(path.parent_path());
+    auto temporary=path.string()+".new";
+    int fd=open(temporary.c_str(),O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC,0600);
+    if(fd<0)throw std::runtime_error("state_write_failed");
+    size_t offset=0;
+    while(offset<text.size()){
+        auto n=write(fd,text.data()+offset,text.size()-offset);
+        if(n<=0){close(fd);unlink(temporary.c_str());throw std::runtime_error("state_write_failed");}
+        offset+=n;
+    }
+    int result=fsync(fd);close(fd);
+    if(result<0||rename(temporary.c_str(),path.c_str())<0)throw std::runtime_error("state_commit_failed");
+    int dir=open(path.parent_path().c_str(),O_RDONLY|O_DIRECTORY|O_CLOEXEC);
+    if(dir>=0){fsync(dir);close(dir);}
+}
+
     std::ifstream f("/proc/self/status");std::string line;
     while(std::getline(f,line))if(line.rfind("VmRSS:",0)==0)return std::stol(line.substr(6));
     return 0;

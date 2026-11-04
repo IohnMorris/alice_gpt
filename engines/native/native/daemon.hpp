@@ -1,4 +1,6 @@
 #pragma once
+#include <array>
+#include <set>
 #include "voice_call.hpp"
 #include "settings.hpp"
 #include "children.hpp"
@@ -22,6 +24,27 @@ class VoiceDaemon {
     std::string led_style=indicator_environment_style();
     std::atomic<bool> preparing_cancel{false};unsigned long generation=0;
     json last_stats=json::object();unsigned int calls=0;
+    json phrase_view(){
+        json values={{"open","открой чат"},{"new","создай новый чат"},{"close","закрой чат"},{"previous","открой предыдущий чат"}};
+        std::ifstream file(base/"commands.txt");std::string line;
+        while(std::getline(file,line)){
+            auto tab=line.find('\t');if(tab==std::string::npos||tab+1>=line.size())continue;
+            std::string key;switch(line[0]){case '1':key="open";break;case '2':key="new";break;case '3':key="close";break;case '4':key="previous";break;default:continue;}
+            values[key]=line.substr(tab+1);
+        }
+        return values;
+    }
+    void save_phrases(const json &value){
+        if(!value.is_object())throw std::runtime_error("invalid_phrases");
+        const std::array<std::pair<const char *,char>,4> fields={{{"open",'1'},{"new",'2'},{"close",'3'},{"previous",'4'}}};
+        std::string text;std::set<std::string> unique;
+        for(const auto &[key,number]:fields){
+            auto phrase=value.value(key,std::string());
+            if(phrase.empty()||phrase.size()>200||phrase.find_first_of("\r\n\t")!=std::string::npos||!unique.insert(phrase).second)throw std::runtime_error("invalid_phrases");
+            text+=number; text+='\t'; text+=phrase; text+='\n';
+        }
+        write_text(base/"commands.txt",text);
+    }
     void close_cue(){
         if(test_mode||stopping||ending)return;
         try{
@@ -138,6 +161,7 @@ public:
                 if(agent->metadata.contains(key))info["native"][key]=agent->metadata[key];
         }
         info["login_saved"]=fs::exists(state/"web-session.json");
+        info["phrases"]=phrase_view();
         auto preferences=settings.view();
         for(auto &chat:preferences["chats"]){chat.erase("conversation_id");chat.erase("parent_message_id");chat.erase("voice_session_id");chat.erase("account_id");}
         info["settings"]=preferences;return info;
@@ -148,6 +172,12 @@ public:
             std::shared_ptr<VoiceCall> active;
             {std::lock_guard<std::mutex> lock(mutex);if(phase!="active"||!call)throw std::runtime_error("voice_not_connected");active=call;}
             active->check();return {{"ok",true},{"synthetic_input",true}};
+        }
+        if(action=="phrases"){save_phrases(request.value("phrases",json::object()));return {{"ok",true},{"phrases",phrase_view()}};}
+        if(action=="delete"){
+            auto id=request.value("chat_id",std::string());if(id.empty())throw std::runtime_error("missing_chat");
+            {std::lock_guard<std::mutex> lock(mutex);if(call)call->stop();preparing_cancel=true;++generation;requests.clear();if(agent)agent->idle();phase=call?"stopping":"idle";}
+            settings.remove(id);return {{"ok",true}};
         }
         if(action=="voice"){settings.voice(request.value("voice",std::string()));return {{"ok",true}};}
         if(action=="led"){

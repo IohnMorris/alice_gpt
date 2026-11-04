@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#18231f" />
+<title>ChatGPT на Станции · Mini 2</title>
+<style>
+  :root {
+    --ink: #202b27;
+    --muted: #77817b;
+    --muted-2: #98a19a;
+    --line: #e5e9e4;
+    --paper: #f5f7f4;
+    --surface: #ffffff;
+    --forest: #345b4b;
+    --forest-deep: #244436;
+    --sage: #eaf1eb;
+    --amber: #bd8b52;
+    --red: #a75c52;
+    --sidebar: #18231f;
+    --sidebar-2: #26332d;
+    --shadow: 0 12px 34px rgba(27, 43, 34, .055);
+    --radius: 9px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px; line-height: 1.5; letter-spacing: -.01em;
+  }
+  button, input, select { font: inherit; }
+  button { cursor: pointer; }
+  .app { min-height: 100vh; display: grid; grid-template-columns: 252px minmax(0, 1fr); }
+  .sidebar {
+    background: var(--sidebar); color: #edf2ed; min-height: 100vh; padding: 27px 17px 20px;
+    display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; padding: 0 10px 30px; }
+  .brand-mark { width: 34px; height: 34px; border: 1px solid rgba(225,239,228,.3); display:grid; place-items:center; border-radius: 8px; color:#c6d9ca; }
+  .brand-mark svg { width: 18px; height: 18px; }
+  .brand-name { font-size: 14px; font-weight: 650; letter-spacing: -.025em; }
+  .brand-caption { font-size: 10px; color: #91a197; margin-top: 2px; letter-spacing: .11em; text-transform: uppercase; }
+  .nav-label { padding: 0 11px; margin: 10px 0 9px; color: #7e9186; font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+  .nav { display: grid; gap: 4px; }
+  .nav button {
+    width: 100%; height: 42px; display: flex; align-items: center; gap: 12px; text-align: left;
+    color: #b5c1b9; border: 1px solid transparent; background: transparent; border-radius: 6px;
+    padding: 0 11px; font-size: 13px; transition: .18s ease;
+  }
+  .nav button:hover { color: #fff; background: rgba(255,255,255,.055); }
+  .nav button.active { color: #f7fbf7; background: #293a31; border-color: #35483d; }
+  .nav svg { width: 16px; height: 16px; opacity: .84; flex: none; }
+  .sidebar-bottom { margin-top: auto; padding: 18px 10px 2px; border-top: 1px solid rgba(225,239,228,.1); }
+  .device-kicker { color: #7e9186; font-size: 10px; text-transform: uppercase; letter-spacing: .13em; margin-bottom: 7px; }
+  .device-name { font-size: 12px; color: #e8eee9; font-weight: 600; }
+  .device-meta { color: #92a197; font-size: 11px; margin-top: 3px; }
+  .main { min-width: 0; }
+  .topbar { height: 76px; display:flex; align-items:center; justify-content:space-between; padding: 0 42px; border-bottom:1px solid var(--line); background: rgba(255,255,255,.74); }
+  .crumb { display:flex; align-items:center; gap:9px; font-size:12px; color:var(--muted); }
+  .crumb strong { color:var(--ink); font-weight:600; }
+  .top-right { display:flex; align-items:center; gap:18px; }
+  .local-label { color:#7d8880; font-size:11px; letter-spacing:.04em; }
+  .local-dot { display:inline-block; width:7px; height:7px; margin-right:7px; background:#6d9a78; border-radius:50%; box-shadow:0 0 0 3px #eaf2eb; }
+  .avatar { width:30px; height:30px; display:grid; place-items:center; background:#e9eee8; color:#45604e; border-radius:7px; font-size:11px; font-weight:700; }
+  .content { max-width: 1180px; margin:0 auto; padding: 38px 42px 60px; }
+  .page-head { display:flex; justify-content:space-between; align-items:flex-end; gap:24px; margin-bottom:28px; }
+  .eyebrow { color:var(--forest); font-size:10px; font-weight:750; letter-spacing:.16em; text-transform:uppercase; margin-bottom:9px; }
+  h1 { font-size:30px; line-height:1.12; letter-spacing:-.045em; margin:0; font-weight:650; }
+  .subtitle { color:var(--muted); margin:9px 0 0; font-size:13px; }
+  .head-meta { text-align:right; color:var(--muted); font-size:11px; }
+  .head-meta strong { display:block; color:var(--ink); font-size:12px; font-weight:600; margin-top:3px; }
+  .status-card { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:20px 22px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:24px; }
+  .status-left { display:flex; align-items:center; gap:15px; min-width:0; }
+  .status-icon { width:42px; height:42px; display:grid; place-items:center; background:var(--sage); color:var(--forest); border-radius:8px; flex:none; }
+  .status-icon svg { width:20px; height:20px; }
+  .status-title { font-weight:650; font-size:14px; }
+  .status-sub { color:var(--muted); font-size:12px; margin-top:2px; }
+  .status-right { display:flex; align-items:center; gap:20px; }
+  .status-value { text-align:right; }
+  .status-value small { display:block; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; }
+  .status-value strong { display:block; font-size:12px; font-weight:650; margin-top:4px; }
+  .state-chip { padding:6px 10px; background:#edf4ee; color:#476c52; font-size:11px; font-weight:650; border:1px solid #dce9dd; border-radius:5px; white-space:nowrap; }
+  .section-grid { display:grid; grid-template-columns:minmax(0, 1.55fr) minmax(270px, .85fr); gap:18px; }
+  .panel { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+  .panel-head { display:flex; align-items:center; justify-content:space-between; padding:19px 21px 15px; border-bottom:1px solid #edf0ec; }
+  .panel-title { font-size:13px; font-weight:700; letter-spacing:-.015em; }
+  .panel-note { color:var(--muted-2); font-size:11px; }
+  .panel-body { padding:19px 21px 21px; }
+  .conversation-preview { display:flex; gap:15px; align-items:flex-start; padding:2px 0 18px; }
+  .chat-glyph { width:38px; height:38px; border-radius:8px; background:#f0f3ef; display:grid; place-items:center; color:#53685b; flex:none; }
+  .chat-glyph svg { width:18px; height:18px; }
+  .conversation-preview h3 { margin:0 0 4px; font-size:14px; font-weight:650; }
+  .conversation-preview p { margin:0; font-size:12px; color:var(--muted); }
+  .actions { display:flex; flex-wrap:wrap; gap:8px; }
+  .btn { border:1px solid #dce3dc; background:#fff; color:#34423a; border-radius:5px; padding:9px 13px; font-size:12px; font-weight:620; transition: .18s ease; }
+  .btn:hover { border-color:#a9b9aa; background:#f8faf7; }
+  .btn.primary { background:var(--forest); color:#fff; border-color:var(--forest); }
+  .btn.primary:hover { background:var(--forest-deep); border-color:var(--forest-deep); }
+  .btn.ghost { border-color:transparent; background:transparent; color:var(--muted); }
+  .btn.ghost:hover { background:#f1f4f0; color:var(--ink); }
+  .btn.danger { color:var(--red); border-color:#eadbd8; }
+  .btn:focus-visible, input:focus-visible, select:focus-visible { outline:2px solid #8aab91; outline-offset:2px; }
+  .quick-list { display:grid; gap:0; }
+  .quick-item { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid #eef1ed; }
+  .quick-item:last-child { border-bottom:0; }
+  .quick-name { font-size:12px; color:#46534b; }
+  .quick-hint { font-size:10px; color:#9aa39c; }
+  .arrow { color:#9ca79f; font-size:15px; }
+  .side-stack { display:grid; gap:18px; }
+  .mini-stat { padding:18px 19px; }
+  .mini-stat-top { display:flex; justify-content:space-between; align-items:center; }
+  .mini-stat-label { font-size:11px; color:var(--muted); }
+  .mini-stat-num { font-size:24px; font-weight:650; letter-spacing:-.05em; margin-top:11px; }
+  .mini-stat-foot { font-size:11px; color:var(--muted-2); margin-top:2px; }
+  .mini-line { height:3px; background:#edf1ec; margin-top:14px; border-radius:2px; overflow:hidden; }
+  .mini-line span { display:block; height:100%; width:72%; background:#87a58b; }
+  .notice { padding:15px 17px; background:#f1f4ef; border:1px solid #e3e9e1; border-radius:7px; color:#647068; font-size:11px; }
+  .notice strong { color:#394a3e; display:block; font-size:12px; margin-bottom:3px; }
+  .page { display:none; }
+  .page.active { display:block; animation:appear .2s ease; }
+  @keyframes appear { from {opacity:.65; transform:translateY(3px)} to {opacity:1; transform:none} }
+  .page-layout { display:grid; grid-template-columns:minmax(0, 1fr) 305px; gap:18px; align-items:start; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .field { display:grid; gap:7px; margin-bottom:16px; }
+  .field label { color:#657168; font-size:11px; font-weight:650; }
+  .field input, .field select { width:100%; height:40px; border:1px solid #dfe5de; background:#fff; border-radius:5px; padding:0 11px; color:var(--ink); }
+  .field input::placeholder { color:#a6afa8; }
+  .field-help { color:#9aa39c; font-size:10px; margin-top:-2px; }
+  .saved-list { display:grid; }
+  .saved-row { display:flex; justify-content:space-between; align-items:center; padding:13px 0; border-bottom:1px solid #edf0ec; gap:12px; }
+  .saved-row:last-child { border-bottom:0; }
+  .saved-row strong { display:block; font-size:12px; font-weight:620; }
+  .saved-row small { display:block; font-size:10px; color:var(--muted-2); margin-top:2px; }
+  .option-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .option { display:flex; justify-content:space-between; align-items:center; border:1px solid #e1e7e0; background:#fff; border-radius:6px; min-height:46px; padding:0 13px; color:#46534b; font-size:12px; text-align:left; }
+  .option:hover { border-color:#b6c6b7; background:#fafcf9; }
+  .option.selected { border-color:#6f9476; background:#f0f5f0; color:#345b3f; box-shadow:inset 0 0 0 1px #6f9476; }
+  .check { width:15px; height:15px; border:1px solid #ccd6cc; border-radius:50%; display:grid; place-items:center; color:transparent; font-size:9px; flex:none; }
+  .selected .check { color:white; background:#66896d; border-color:#66896d; }
+  .palette-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
+  .palette { border:1px solid #e1e7e0; border-radius:6px; padding:12px; background:white; text-align:left; }
+  .palette.selected { border-color:#6f9476; box-shadow:inset 0 0 0 1px #6f9476; background:#f9fbf8; }
+  .swatch { height:27px; border-radius:3px; margin-bottom:9px; }
+  .palette span { font-size:11px; color:#536057; }
+  .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #edf0ec; font-size:12px; color:#4d5a51; }
+  .switch { width:34px; height:19px; border-radius:10px; background:#dce3dc; position:relative; border:0; padding:0; }
+  .switch:after { content:""; width:13px; height:13px; position:absolute; top:2px; left:2px; border-radius:50%; background:white; box-shadow:0 1px 2px #0002; transition:.16s; }
+  .switch.on { background:#678b6e; }
+  .switch.on:after { left:18px; }
+  .diagnostic { display:grid; gap:0; }
+  .diagnostic-row { display:grid; grid-template-columns:1fr auto; align-items:center; gap:16px; padding:14px 0; border-bottom:1px solid #edf0ec; }
+  .diagnostic-row:last-child { border-bottom:0; }
+  .diagnostic-row strong { display:block; font-size:12px; font-weight:620; }
+  .diagnostic-row small { color:var(--muted-2); font-size:10px; display:block; margin-top:2px; }
+  .diag-state { color:#5d8064; font-size:10px; font-weight:700; letter-spacing:.04em; }
+  .toast { position:fixed; right:26px; bottom:24px; padding:12px 16px; color:#f7faf7; background:#24352b; border:1px solid #3b5143; border-radius:6px; box-shadow:0 10px 30px #15251b30; font-size:12px; opacity:0; transform:translateY(8px); pointer-events:none; transition:.22s ease; z-index:10; }
+  .toast.show { opacity:1; transform:none; }
+  .page-foot { margin-top:22px; color:#9aa49c; font-size:10px; }
+  @media (max-width: 900px) {
+    .app { grid-template-columns:76px minmax(0,1fr); }
+    .sidebar { padding:22px 10px 18px; }
+    .brand { justify-content:center; padding:0 0 28px; }
+    .brand-copy, .nav-label, .nav-text, .device-kicker, .device-name, .device-meta { display:none; }
+    .nav button { justify-content:center; padding:0; }
+    .sidebar-bottom { display:flex; justify-content:center; padding:16px 0 0; }
+    .sidebar-bottom:after { content:"M2"; color:#b8c9bd; font-size:10px; letter-spacing:.1em; }
+    .topbar { padding:0 25px; }
+    .content { padding:32px 25px 48px; }
+  }
+  @media (max-width: 680px) {
+    body { padding-bottom: 64px; }
+    .app { display:block; }
+    .sidebar { position:fixed; z-index:5; bottom:0; top:auto; left:0; right:0; height:64px; min-height:0; padding:7px 12px; display:block; border-top:1px solid rgba(225,239,228,.15); }
+    .brand { display:none; }
+    .nav { display:flex; overflow:auto; gap:5px; }
+    .nav button { width:auto; min-width:42px; height:48px; padding:0 11px; justify-content:center; }
+    .nav button .nav-text { display:none; }
+    .nav svg { width:17px; }
+    .sidebar-bottom { display:none; }
+    .topbar { height:55px; padding:0 17px; }
+    .local-label { font-size:0; }
+    .local-dot { margin:0; }
+    .content { padding:27px 16px 38px; }
+    .page-head { align-items:flex-start; margin-bottom:20px; }
+    h1 { font-size:25px; }
+    .head-meta { display:none; }
+    .status-card { align-items:flex-start; padding:16px; }
+    .status-right { display:block; text-align:right; }
+    .status-value { margin-bottom:8px; }
+    .state-chip { display:inline-block; }
+    .section-grid, .page-layout { grid-template-columns:1fr; }
+    .side-stack { grid-template-columns:1fr 1fr; }
+    .side-stack .notice { grid-column:1/-1; }
+    .form-row { grid-template-columns:1fr; gap:0; }
+    .palette-grid { grid-template-columns:repeat(2,1fr); }
+  }
+  @media (max-width: 390px) { .nav button .nav-text { display:none; } .side-stack { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 8.5 12 4l7 4.5v7L12 20l-7-4.5z"/><path d="m5.5 8.7 6.5 4 6.5-4M12 12.7V20"/></svg></div>
+      <div class="brand-copy"><div class="brand-name">ChatGPT на Станции</div><div class="brand-caption">Local control center</div></div>
+    </div>
+    <div class="nav-label">Рабочее пространство</div>
+    <nav class="nav" aria-label="Основная навигация">
+      <button class="active" data-page="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></svg><span class="nav-text">Обзор</span></button>
+      <button data-page="conversation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-7.5A7.5 7.5 0 0 1 10.5 6H12"/><path d="M15 3h6v6M21 3l-8 8"/></svg><span class="nav-text">Разговор</span></button>
+      <button data-page="voice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8"/></svg><span class="nav-text">Голос</span></button>
+      <button data-page="lighting"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 18h6m-5 3h4m-2-19a7 7 0 0 0-4 12.7c.6.4 1 1.1 1 1.8h6c0-.7.4-1.4 1-1.8A7 7 0 0 0 12 2z"/></svg><span class="nav-text">Подсветка</span></button>
+      <button data-page="phrases"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5.5h16v11H9l-5 3z"/><path d="M8 10h8M8 13.5h5"/></svg><span class="nav-text">Голосовые фразы</span></button>
+      <button data-page="diagnostics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V5m0 14h16"/><path d="m7 15 3-4 3 2 5-7"/></svg><span class="nav-text">Диагностика</span></button>
+    </nav>
+    <div class="sidebar-bottom"><div class="device-kicker">Подключённое устройство</div><div class="device-name">Яндекс Станция Mini 2</div><div class="device-meta">Локальная панель · ARM64</div></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="crumb"><span>Устройства</span><span>／</span><strong>Mini 2</strong></div>
+      <div class="top-right"><div class="local-label"><i class="local-dot" id="connection-dot"></i><span id="connection-label">Проверка связи</span></div><div class="avatar">M2</div></div>
+    </header>
+    <div class="content">
+      <section class="page active" id="page-overview">
+        <div class="page-head"><div><div class="eyebrow">Панель управления · Mini 2</div><h1>Всё под контролем.</h1><p class="subtitle">ChatGPT, разговоры и настройки вашей Станции — в одном месте.</p></div><div class="head-meta">СОСТОЯНИЕ УСТРОЙСТВА<strong>Проверка соединения · локально</strong></div></div>
+        <div class="status-card">
+          <div class="status-left"><div class="status-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12.5 9.2 17 19 7"/></svg></div><div><div class="status-title" id="status-title">Проверяем службу…</div><div class="status-sub" id="status-sub">Получаем данные с колонки</div></div></div><div class="status-right"><div class="status-value"><small>Текущий режим</small><strong id="status-phase">—</strong></div><span class="state-chip" id="status-chip">Проверка</span></div>
+        </div>
+        <div class="section-grid">
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Разговор</div><div class="panel-note">Управление чатами</div></div>
+            <div class="panel-body">
+              <div class="conversation-preview"><div class="chat-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-7.5A7.5 7.5 0 0 1 10.5 6H12"/><path d="M15 3h6v6M21 3l-8 8"/></svg></div><div><h3>Продолжить общение с ChatGPT</h3><p>Откройте текущий диалог или начните новый. Возврат к Алисе доступен в любой момент.</p></div></div>
+              <div class="actions"><button class="btn primary" data-action="open-chat">Открыть чат</button><button class="btn" data-action="new-chat">Новый чат</button><button class="btn ghost" data-action="return-alice">Вернуться к Алисе</button></div>
+              <div style="height:1px;background:#edf0ec;margin:20px 0 12px"></div>
+              <div class="quick-list" id="overview-quick-list"><div class="quick-item"><span class="quick-name">Загрузка разговоров…</span></div></div>
+            </div>
+          </div>
+          <div class="side-stack">
+            <div class="panel mini-stat"><div class="mini-stat-top"><span class="mini-stat-label">Настройки устройства</span><span class="panel-note">Mini 2</span></div><div class="mini-stat-num">04</div><div class="mini-stat-foot">Основных раздела настроек</div><div class="mini-line"><span></span></div></div>
+            <div class="panel mini-stat"><div class="mini-stat-top"><span class="mini-stat-label">Голосовые команды</span><span class="panel-note">Локально</span></div><div class="mini-stat-num">04</div><div class="mini-stat-foot">Настраиваемые фразы</div><div class="mini-line"><span style="width:100%"></span></div></div>
+            <div class="notice"><strong>Важное о микрофоне</strong><span id="overview-note">Физическое выключение микрофона всегда имеет приоритет над настройками подсветки и программными командами.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-conversation">
+        <div class="page-head"><div><div class="eyebrow">История и диалоги</div><h1>Разговоры</h1><p class="subtitle">Открывайте сохранённые диалоги, создавайте новые и задавайте им названия.</p></div></div>
+        <div class="page-layout">
+          <div class="panel"><div class="panel-head"><div class="panel-title">Работа с чатами</div><span class="panel-note">ChatGPT</span></div><div class="panel-body">
+            <div class="actions" style="margin-bottom:20px"><button class="btn primary" data-action="open-chat">Открыть чат</button><button class="btn" data-action="new-chat">Новый чат</button><button class="btn ghost" data-action="return-alice">Вернуться к Алисе</button></div>
+            <div class="field"><label for="saved-chat">Сохранённый разговор</label><select id="saved-chat"></select></div>
+            <div class="actions" style="margin-bottom:23px"><button class="btn primary" data-action="open-selected">Открыть выбранный</button><button class="btn danger" data-action="delete-selected">Удалить</button></div>
+            <div style="height:1px;background:#edf0ec;margin:0 0 19px"></div>
+            <div class="field"><label for="chat-title">Название</label><input id="chat-title" placeholder="Введите название разговора" maxlength="70" /></div>
+            <button class="btn" data-action="save-title">Сохранить название</button>
+          </div></div>
+          <aside class="panel"><div class="panel-head"><div class="panel-title">Сохранённые диалоги</div></div><div class="panel-body saved-list" id="chat-list"><div class="saved-row"><div><strong>Загрузка…</strong></div></div></div></aside>
+        </div>
+      </section>
+
+      <section class="page" id="page-voice">
+        <div class="page-head"><div><div class="eyebrow">Звучание устройства</div><h1>Голос</h1><p class="subtitle">Выберите голос, которым Станция будет отвечать в режиме ChatGPT.</p></div></div>
+        <div class="page-layout"><div class="panel"><div class="panel-head"><div class="panel-title">Голосовой профиль</div><span class="panel-note">Выберите один вариант</span></div><div class="panel-body"><div class="option-grid" id="voice-options"><button class="option selected" data-value="cove">Cove <span class="check">✓</span></button><button class="option" data-value="fathom">Arbor <span class="check">✓</span></button><button class="option" data-value="breeze">Breeze <span class="check">✓</span></button><button class="option" data-value="ember">Ember <span class="check">✓</span></button><button class="option" data-value="juniper">Juniper <span class="check">✓</span></button><button class="option" data-value="maple">Maple <span class="check">✓</span></button><button class="option" data-value="glimmer">Sol <span class="check">✓</span></button><button class="option" data-value="orbit">Spruce <span class="check">✓</span></button><button class="option" data-value="vale">Vale <span class="check">✓</span></button></div><div style="margin-top:22px"><button class="btn primary" data-action="save-voice">Сохранить голос</button></div></div></div><aside class="notice"><strong>Настройка голоса</strong>Выбранный вариант будет использоваться для ответов ChatGPT после применения настроек. Системный голос Алисы настраивается отдельно.</aside></div>
+      </section>
+
+      <section class="page" id="page-lighting">
+        <div class="page-head"><div><div class="eyebrow">Визуальная обратная связь</div><h1>Подсветка</h1><p class="subtitle">Настройте световую индикацию Станции под свой сценарий использования.</p></div></div>
+        <div class="page-layout"><div class="panel"><div class="panel-head"><div class="panel-title">Световой режим</div><span class="panel-note">Один активный режим</span></div><div class="panel-body"><div class="palette-grid" id="light-options"><button class="palette selected" data-value="rainbow"><div class="swatch" style="background:linear-gradient(90deg,#e66f6f,#d99a5d,#d5c76e,#71a77d,#6f9bc4,#9c82b8)"></div><span>Радуга</span></button><button class="palette" data-value="blue"><div class="swatch" style="background:#4b83bd"></div><span>Синий</span></button><button class="palette" data-value="purple"><div class="swatch" style="background:#8267b7"></div><span>Фиолетовый</span></button><button class="palette" data-value="red"><div class="swatch" style="background:#c9635e"></div><span>Красный</span></button><button class="palette" data-value="green"><div class="swatch" style="background:#65966b"></div><span>Зелёный</span></button><button class="palette" data-value="white"><div class="swatch" style="background:#e7ece4"></div><span>Белый</span></button><button class="palette" data-value="pulse-blue"><div class="swatch" style="background:linear-gradient(90deg,#d8e7f4,#4c85bd,#d8e7f4)"></div><span>Пульсация: синий</span></button><button class="palette" data-value="pulse-purple"><div class="swatch" style="background:linear-gradient(90deg,#eee4f7,#8267b7,#eee4f7)"></div><span>Пульсация: фиолетовый</span></button><button class="palette" data-value="pulse-red"><div class="swatch" style="background:linear-gradient(90deg,#f6e2df,#c9635e,#f6e2df)"></div><span>Пульсация: красный</span></button><button class="palette" data-value="pulse-green"><div class="swatch" style="background:linear-gradient(90deg,#e0f0e2,#65966b,#e0f0e2)"></div><span>Пульсация: зелёный</span></button><button class="palette" data-value="pulse-white"><div class="swatch" style="background:linear-gradient(90deg,#c9d0c9,#ffffff,#c9d0c9)"></div><span>Пульсация: белый</span></button><button class="palette" data-value="off"><div class="swatch" style="background:#303936"></div><span>Выключить</span></button></div><div style="margin-top:22px"><button class="btn primary" data-action="apply-light">Применить</button></div></div></div><aside class="notice"><strong>Приоритет безопасности</strong>Физическое выключение микрофона всегда важнее подсветки. Световые эффекты не меняют состояние микрофона и не могут включить его.</aside></div>
+      </section>
+
+      <section class="page" id="page-phrases">
+        <div class="page-head"><div><div class="eyebrow">Быстрые действия</div><h1>Голосовые фразы</h1><p class="subtitle">Настройте команды для управления диалогом голосом.</p></div><span class="state-chip">Применяются сразу</span></div>
+        <div class="page-layout"><div class="panel"><div class="panel-head"><div class="panel-title">Команды управления</div><span class="panel-note">4 фразы</span></div><div class="panel-body"><div class="field"><label for="phrase-open">Открыть чат</label><input id="phrase-open" value="Открыть чат" /></div><div class="field"><label for="phrase-close">Закрыть чат</label><input id="phrase-close" value="Закрыть чат" /></div><div class="field"><label for="phrase-new">Новый чат</label><input id="phrase-new" value="Новый чат" /></div><div class="field"><label for="phrase-prev">Предыдущий чат</label><input id="phrase-prev" value="Предыдущий чат" /></div><button class="btn primary" data-action="save-phrases">Сохранить фразы</button></div></div><aside class="notice"><strong>Применяются сразу</strong>Изменения фраз сохраняются в локальном профиле интерфейса. Для работы на Станции требуется подключённый обработчик команд.</aside></div>
+      </section>
+
+      <section class="page" id="page-diagnostics">
+        <div class="page-head"><div><div class="eyebrow">Состояние системы</div><h1>Диагностика</h1><p class="subtitle">Основные компоненты локальной панели и подключения.</p></div><button class="btn" data-action="run-diagnostics">Запустить проверку</button></div>
+        <div class="panel"><div class="panel-head"><div class="panel-title">Состояние компонентов</div><span class="panel-note">Обновляется автоматически</span></div><div class="panel-body diagnostic"><div class="diagnostic-row"><div><strong>Локальная панель</strong><small>Интерфейс управления</small></div><span class="diag-state">АКТИВНА</span></div><div class="diagnostic-row"><div><strong>Устройство</strong><small>Яндекс Станция Mini 2</small></div><span class="diag-state" id="diag-service">ПРОВЕРКА</span></div><div class="diagnostic-row"><div><strong>Сессия ChatGPT</strong><small>Сохранённый профиль</small></div><span class="diag-state" id="diag-login">ПРОВЕРКА</span></div><div class="diagnostic-row"><div><strong>Память клиента</strong><small>Текущее использование</small></div><span class="diag-state" id="diag-memory">—</span></div></div></div><p class="page-foot" id="diag-error"></p>
+      </section>
+      <section class="page" id="page-pair"><div class="page-head"><div><div class="eyebrow">Первое подключение</div><h1>Введите код сопряжения</h1><p class="subtitle">Код показан в мастере установки. Если он потерян, создайте новый код в мастере — переустанавливать колонку не нужно.</p></div></div><div class="panel"><div class="panel-body"><div class="field"><label for="pair-code">Код из 8 цифр</label><input id="pair-code" inputmode="numeric" maxlength="8" autocomplete="one-time-code"></div><button class="btn primary" id="pair-button">Подключиться</button><p class="page-foot" id="pair-error"></p></div></div></section>
+      <div class="page-foot">Локальная панель управления · Mini 2</div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+const $=id=>document.getElementById(id),navButtons=[...document.querySelectorAll('.nav button')],pages=[...document.querySelectorAll('.page')];let state,timer;
+const phase={idle:'Обычная Алиса',connecting:'Подключаем ChatGPT…',active:'Разговор с ChatGPT',stopping:'Возвращаем Алису…',stopped:'Служба остановлена'};
+function showPage(id){navButtons.forEach(b=>b.classList.toggle('active',b.dataset.page===id));pages.forEach(p=>p.classList.toggle('active',p.id===`page-${id}`));window.scrollTo({top:0,behavior:'smooth'})}navButtons.forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+function toast(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>el.classList.remove('show'),2500)}
+async function api(path,body){const r=await fetch(path,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});let data={};try{data=await r.json()}catch{}if(!r.ok)throw Object.assign(Error(data.error||'Ошибка'),{status:r.status});return data}
+async function command(action,extra={}){try{toast('Применяем…');const result=await api('/api/command',{action,...extra});if(!result.ok)throw Error();await update();toast('Настройка применена')}catch(e){toast('Не удалось применить настройку')}}
+function renderChats(s){const chats=s.settings.chats||[],selected=s.settings.selected;const select=$('saved-chat');select.replaceChildren(...chats.map(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.title+(c.confirmed?'':' · новый');return o}));select.value=chats.some(c=>c.id===selected)?selected:chats[0]?.id||'';const list=$('chat-list');list.replaceChildren(...chats.map(c=>{const row=document.createElement('div');row.className='saved-row';row.innerHTML='<div><strong></strong><small></small></div><span class="arrow">↗</span>';row.querySelector('strong').textContent=c.title;row.querySelector('small').textContent=c.confirmed?'Сохранённый разговор':'Новый разговор';return row}));const quick=$('overview-quick-list');quick.replaceChildren(...chats.slice(0,3).map(c=>{const row=document.createElement('div');row.className='quick-item';row.innerHTML='<span class="quick-name"></span><span class="quick-hint"></span>';row.querySelector('.quick-name').textContent=c.title;row.querySelector('.quick-hint').textContent=c.confirmed?'Сохранён':'Новый';return row}));const current=chats.find(c=>c.id===select.value);if(document.activeElement!==$('chat-title'))$('chat-title').value=current?.title||''}
+function render(s){state=s;const online=!!s.agent_connected;$('connection-dot').classList.toggle('off',!online);$('connection-label').textContent=online?'Локальное соединение':'Служба недоступна';$('status-title').textContent=online?'Служба готова к работе':'Служба не готова';$('status-sub').textContent=online?(s.login_saved?'Вход ChatGPT сохранён · подключение активно':'Нужно войти в ChatGPT через мастер'):'Нет ответа от службы';$('status-phase').textContent=phase[s.phase]||s.phase||'—';$('status-chip').textContent=online?'Готова':'Проверка';$('status-chip').classList.toggle('warn',!online);$('overview-note').textContent=s.error?'Ошибка: '+s.error:(online?'Состояние обновляется автоматически.':'Нет ответа от службы.');renderChats(s);document.querySelectorAll('#voice-options .option').forEach(b=>b.classList.toggle('selected',b.dataset.value===s.settings.voice));document.querySelectorAll('#light-options .palette').forEach(b=>b.classList.toggle('selected',b.dataset.value===s.led_style));for(const [key,id] of Object.entries({open:'phrase-open',close:'phrase-close',new:'phrase-new',previous:'phrase-prev'})){const field=$(id);if(document.activeElement!==field)field.value=s.phrases?.[key]||''}$('diag-error').textContent=s.error?'Ошибка: '+s.error:'';$('diag-service').textContent=online?'ПОДКЛЮЧЕНО':'НЕДОСТУПНО';$('diag-login').textContent=s.login_saved?'СОХРАНЕНА':'ТРЕБУЕТСЯ ВХОД';$('diag-memory').textContent=s.rss_kib?`${(s.rss_kib/1024).toFixed(1)} МБ`:'—'}
+async function update(){try{render(await api('/api/status'));$('page-pair').classList.remove('active')}catch(e){if(e.status===401){pages.forEach(p=>p.classList.remove('active'));$('page-pair').classList.add('active')}else toast('Нет связи с панелью')}}
+const actionMap={'open-chat':'open','new-chat':'new','return-alice':'close','open-selected':'select','delete-selected':'delete','save-title':'rename','save-voice':'voice','apply-light':'led','save-phrases':'phrases','run-diagnostics':'status'};let selectedVoice='cove',selectedLed='rainbow';document.querySelectorAll('#voice-options .option').forEach(b=>b.onclick=()=>{selectedVoice=b.dataset.value;document.querySelectorAll('#voice-options .option').forEach(x=>x.classList.toggle('selected',x===b))});document.querySelectorAll('#light-options .palette').forEach(b=>b.onclick=()=>{selectedLed=b.dataset.value;document.querySelectorAll('#light-options .palette').forEach(x=>x.classList.toggle('selected',x===b))});document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>{const a=b.dataset.action;if(a==='open-selected')return command('select',{chat_id:$('saved-chat').value});if(a==='delete-selected'){if(confirm('Удалить выбранный чат?'))return command('delete',{chat_id:$('saved-chat').value});return}if(a==='save-title')return command('rename',{chat_id:$('saved-chat').value,title:$('chat-title').value.trim()});if(a==='save-voice')return command('voice',{voice:selectedVoice});if(a==='apply-light')return command('led',{style:selectedLed});if(a==='save-phrases')return command('phrases',{phrases:{open:$('phrase-open').value.trim(),close:$('phrase-close').value.trim(),new:$('phrase-new').value.trim(),previous:$('phrase-prev').value.trim()}});if(a==='run-diagnostics')return update();command(actionMap[a])});$('pair-button').onclick=async()=>{try{await api('/pair',{code:$('pair-code').value});await update();toast('Панель подключена')}catch(e){$('pair-error').textContent='Код не подошёл. Проверьте его в мастере установки.'}};update();setInterval(update,3000);
+</script>
+</body>
+</html>

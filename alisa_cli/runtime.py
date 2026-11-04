@@ -150,10 +150,10 @@ def native_action(config,action,argument=None):
     if r.returncode:raise RuntimeError(result.get('error','Ошибка нативного клиента'))
     return result
 
-def panel_url(config):
+def panel_url(config,reset=False):
     """Return the phone-facing local-network panel address and pairing code."""
     if config['mode']!='native':raise ValueError('Панель управления доступна в нативном режиме')
-    details=native_action(config,'url')
+    details=native_action(config,'reset-panel' if reset else 'url')
     port=details.get('port')
     if not isinstance(port,int) or not 1<=port<=65535:raise RuntimeError('Нативный клиент вернул неверный адрес панели')
     host=config.get('host','')
