@@ -1,7 +1,23 @@
 """Pinned SSH transport for Windows. Passwords are kept only in memory."""
-import base64,hashlib,select,socket,subprocess,threading,time
+import base64,hashlib,os,select,socket,subprocess,threading,time
 from pathlib import Path
 from .errors import PublicError
+
+# Passwords live only in this process and are scoped to the confirmed endpoint.
+_passwords={}
+def remember_password(config,password):
+    _passwords[(config['host'],config.get('port',2222),config.get('user') or 'root')]=password
+
+def forget_password(config):
+    _passwords.pop((config['host'],config.get('port',2222),config.get('user') or 'root'),None)
+
+def password_environment(config):
+    endpoint=(config['host'],config.get('port',2222),config.get('user') or 'root')
+    env=os.environ.copy()
+    if endpoint in _passwords:
+        env['ALISA_TEMP_SSH_ENDPOINT']='%s:%s:%s'%endpoint
+        env['ALISA_TEMP_SSH_PASSWORD']=_passwords[endpoint]
+    return env
 
 def library():
     try:import paramiko;return paramiko
@@ -47,11 +63,25 @@ def connect(config,password=None):
     if not known or not Path(known).is_file():raise RuntimeError('Сначала подтвердите SSH-ключ колонки через настройку подключения.')
     client.load_host_keys(str(known));client.set_missing_host_key_policy(p.RejectPolicy())
     try:
+        endpoint=(config['host'],config.get('port',2222),config.get('user') or 'root')
+        if password is None and endpoint in _passwords:password=_passwords[endpoint]
+        if password is None and os.environ.get('ALISA_TEMP_SSH_ENDPOINT')=='%s:%s:%s'%endpoint:
+            password=os.environ.get('ALISA_TEMP_SSH_PASSWORD')
         identity=config.get('identity') if password is None else None
-        client.connect(config['host'],port=config.get('port',2222),username=config.get('user') or 'root',
-                       password=password,key_filename=str(identity) if identity else None,
-                       allow_agent=False,look_for_keys=False,timeout=8,banner_timeout=12,auth_timeout=12)
+        if password=='':
+            transport=p.Transport(socket.create_connection((config['host'],config.get('port',2222)),timeout=8))
+            client._transport=transport
+            transport.start_client(timeout=12)
+            remote=transport.get_remote_server_key(); saved=known_keys(known,host_id(config)).get(remote.get_name())
+            if saved is None or saved.asbytes()!=remote.asbytes():raise PublicError('ssh_hostkey')
+            transport.auth_none(config.get('user') or 'root')
+            if not transport.is_authenticated():raise p.AuthenticationException()
+        else:
+            client.connect(config['host'],port=config.get('port',2222),username=config.get('user') or 'root',
+                           password=password,key_filename=str(identity) if identity else None,
+                           allow_agent=False,look_for_keys=False,timeout=8,banner_timeout=12,auth_timeout=12)
         client.get_transport().set_keepalive(5);return client
+    except PublicError:client.close();raise
     except p.BadHostKeyException:client.close();raise PublicError('ssh_hostkey') from None
     except p.AuthenticationException:client.close();raise PublicError('ssh_auth') from None
     except (OSError,p.SSHException):client.close();raise PublicError('ssh_unreachable') from None

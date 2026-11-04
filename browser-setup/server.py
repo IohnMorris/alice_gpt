@@ -77,9 +77,9 @@ class Handler(BaseHTTPRequestHandler):
                     fp=hostkey(host,port);pending.clear();pending.update({'host':host,'port':port,'fingerprint':fp});publish('fingerprint',fp)
                 launch(inspect,'Проверяем SSH колонки…')
             elif self.path=='/api/connect':
-                host,port=checked_host(data);password=data.get('password','');private_key=data.get('private_key','');existing=data.get('existing',False)
+                host,port=checked_host(data);password=data.get('password','');private_key=data.get('private_key','');existing=data.get('existing',False);blank=data.get('blank',False)
                 if not isinstance(password,str) or not isinstance(private_key,str) or len(password)>512 or len(private_key)>20000:raise ValueError('Проверьте данные SSH.')
-                if type(existing) is not bool or sum((bool(password),bool(private_key),existing))!=1:raise ValueError('Выберите один способ входа: пароль, приватный ключ или сохранённый ключ.')
+                if type(existing) is not bool or type(blank) is not bool or sum((bool(password),bool(private_key),existing,blank))!=1:raise ValueError('Выберите один способ входа: пароль, пустой пароль, приватный ключ или сохранённый ключ.')
                 if private_key and 'PRIVATE KEY-----' not in private_key:raise ValueError('Для входа нужен приватный ключ, а не публичный.')
                 if pending.get('host')!=host or pending.get('port')!=port:raise ValueError('Сначала проверьте отпечаток SSH.')
                 fp=pending.get('fingerprint')
@@ -90,9 +90,11 @@ class Handler(BaseHTTPRequestHandler):
                     c.update(host=host,port=port,user='root',ssh_explicit=True)
                     winssh.trust(c,lambda h,p,found: secrets.compare_digest(found,fp))
                     if existing:
+                        winssh.forget_password(c)
                         if not c.get('identity'):raise ValueError('Сохранённый ключ для этого адреса не найден.')
                         if winssh.run(c,'id -u').stdout.strip()!=b'0':raise ValueError('SSH-ключ не даёт права root.')
                     elif private_key:
+                        winssh.forget_password(c)
                         from alisa_cli.state import HOME,write_private,save
                         import uuid
                         imported=HOME/'ssh'/('import-'+uuid.uuid4().hex)
@@ -104,7 +106,12 @@ class Handler(BaseHTTPRequestHandler):
                         except BaseException:
                             imported.unlink(missing_ok=True)
                             raise
-                    else:winssh.install_key(c,password)
+                    else:
+                        from alisa_cli.state import save
+                        password_value='' if blank else password
+                        if winssh.run(c,'id -u',password=password_value).stdout.strip()!=b'0':raise ValueError('SSH не даёт права root.')
+                        winssh.remember_password(c,password_value)
+                        save(c)
                     pending.clear();steps.update(connected=True,installed=False,login=False)
                     try:
                         current=runtime.status(c)
@@ -137,7 +144,7 @@ class Handler(BaseHTTPRequestHandler):
                 def do_login():
                     c=load('native')
                     if c.get('mode')!='native' or not c.get('installed'):raise RuntimeError('not installed')
-                    p=subprocess.run([sys.executable,'-B','-X','utf8',str(PACKAGE/'alisa.py'),'native','login'],stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=1100,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+                    p=subprocess.run([sys.executable,'-B','-X','utf8',str(PACKAGE/'alisa.py'),'native','login'],stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=1100,env=winssh.password_environment(c),creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
                     if p.returncode:raise RuntimeError('login failed')
                     steps['login']=True
                     publish('complete','Вход сохранён. Откройте чат на колонке и задайте вопрос.')
