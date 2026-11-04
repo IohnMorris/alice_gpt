@@ -117,7 +117,12 @@ class Handler(BaseHTTPRequestHandler):
                     publish('connected','Подключение и права root проверены. Нажмите «Установить» — служба будет обновлена безопасно.')
                 launch(connect,'Проверяем пароль и права root…')
             elif self.path=='/api/install':
-                if not steps['connected']:raise ValueError('Сначала подключите колонку.')
+                if not steps['connected']:
+                    c=load('native')
+                    try:
+                        if winssh.run(c,'id -u').stdout.strip()!=b'0':raise ValueError('SSH-подключение не подтверждено.')
+                        steps['connected']=True
+                    except Exception:raise ValueError('Сначала подтвердите SSH-подключение.')
                 def do_install():
                     c=load('native')
                     install.install(c,activate=True);autostart.set_enabled(c,True)

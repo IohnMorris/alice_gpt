@@ -420,19 +420,6 @@
       </button>
     </nav>
 
-    <div class="sidebar-switch">
-      <span class="sidebar-switch-label">Демо-состояние</span>
-      <div class="mode-pills">
-        <button class="mode-pill active" id="preset-done" type="button">✓ Готово</button>
-        <button class="mode-pill" id="preset-fresh" type="button">С нуля</button>
-      </div>
-    </div>
-
-    <div class="sidebar-bottom">
-      <div class="device-kicker">Целевое устройство</div>
-      <div class="device-name">Яндекс Станция Mini 2</div>
-      <div class="device-meta">Локальный мастер · ARM64</div>
-    </div>
   </aside>
 
   <!-- MAIN AREA -->
@@ -511,11 +498,11 @@
               <div class="form-row">
                 <div class="field">
                   <label for="ssh-ip">IP-адрес</label>
-                  <input id="ssh-ip" type="text" value="192.168.1.151" placeholder="192.168.1.151" />
+                  <input id="ssh-ip" type="text" value="" placeholder="192.168.1.50" />
                 </div>
                 <div class="field">
                   <label for="ssh-port">Порт SSH</label>
-                  <input id="ssh-port" type="number" value="22" placeholder="22" />
+                  <input id="ssh-port" type="number" value="2222" placeholder="2222" />
                 </div>
               </div>
 
@@ -523,7 +510,7 @@
               <div class="fingerprint-bar">
                 <div class="fp-info">
                   <span class="fp-badge" id="fp-status-badge">ED25519</span>
-                  <span class="fp-code" id="fp-hash">SHA256:9f4b2c8e11a7d04c5e8a33b91e2f0a1d7c6e4b2a (подтверждён)</span>
+                  <span class="fp-code" id="fp-hash">Проверка ещё не выполнена</span>
                 </div>
                 <button class="btn sm" type="button" data-action="check-fingerprint">
                   Проверить отпечаток SSH
