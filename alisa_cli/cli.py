@@ -238,7 +238,7 @@ def main(argv=None):
     parser=argparse.ArgumentParser(prog='alisa',description='Лайт 1, Лайт 2 и Станция 2: нативный установщик Windows.' if sys.platform=='win32' else 'Лайт 1, Лайт 2 и Станция 2: нативный GPT. Мост — Лайт 2. Сначала выберите режим.')
     parser.add_argument('--version',action='version',version=__version__)
     parser.add_argument('mode',nargs='?',choices=MODES)
-    parser.add_argument('action',nargs='?',choices=['install','update','start','run','stop','toggle','status','doctor','network','settings','autostart','login','logout','verify','vpn','ssh','voice','storage','uninstall','help'])
+    parser.add_argument('action',nargs='?',choices=['install','update','start','run','stop','toggle','status','doctor','network','settings','autostart','login','logout','verify','vpn','ssh','voice','storage','panel','uninstall','help'])
     parser.add_argument('operation',nargs='?')
     parser.add_argument('--host');parser.add_argument('--port',type=int);parser.add_argument('--user');parser.add_argument('--identity')
     parser.add_argument('--dry-run',action='store_true');parser.add_argument('--yes',action='store_true');parser.add_argument('--no-start',action='store_true')
@@ -290,6 +290,7 @@ def main(argv=None):
             s=runtime.status(config)
             if s.get('error'):s['error_message']=friendly(s['error'])
             show(s)
+        elif action=='panel':show(runtime.panel_url(config))
         elif action=='doctor':show(doctor.inspect(config))
         elif action=='network':show(network.check(config))
         elif action=='storage':

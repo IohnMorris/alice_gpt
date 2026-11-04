@@ -170,7 +170,7 @@ public:
         changed.notify_all();return {{"ok",true},{"queued",true}};
     }
     void serve(){
-        ControlServer server(18080,state,[this]{return status();},[this](const json &request){return submit(request);});
+        ControlServer server(control_port,state,[this]{return status();},[this](const json &request){return submit(request);});
         server.run();
     }
     ~VoiceDaemon(){

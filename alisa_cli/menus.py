@@ -17,7 +17,7 @@ def auto_entries(mode,config):
 def entries(mode,page,config=None):
     config=config or {}
     if page=='main':
-        values=[('GPT — запустить / остановить',('toggle',None)),('Настройки','@settings'),('Аккаунт ChatGPT','@account')]
+        values=[('GPT — запустить / остановить',('toggle',None)),('Открыть панель с телефона',('panel',None)),('Настройки','@settings'),('Аккаунт ChatGPT','@account')]
         if mode=='native':values.append(('VPN / VLESS','@vpn'))
         values.append(('Установка и обслуживание','@service'))
     elif page=='settings':

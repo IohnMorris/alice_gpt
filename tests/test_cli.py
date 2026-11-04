@@ -32,6 +32,14 @@ class ConfigTests(unittest.TestCase):
   value=subprocess.CompletedProcess([],2,stdout=b'{"ok":false,"error":"control_unavailable"}',stderr=b'')
   with patch('alisa_cli.runtime.Station.run',return_value=value):result=runtime.status(configured('native'))
   self.assertEqual(result['phase'],'stopped');self.assertFalse(result['agent_connected']);self.assertFalse(result['error'])
+
+ def test_panel_command_exposes_phone_url(self):
+  from alisa_cli import cli
+  c=configured('native')
+  panel={'url':'http://192.0.2.20:2000/','pairing_code':'12345678'}
+  with patch.object(cli,'load',return_value=c),patch.object(cli.runtime,'panel_url',return_value=panel),patch.object(cli,'show') as show:
+   self.assertEqual(cli.main(['native','panel']),0)
+  show.assert_called_once_with(panel)
  def test_ssh_alias_overrides_are_resolved_before_renaming(self):
   c=configured('bridge');c['user']='root'
   resolved=b'hostname 192.0.2.20\nuser root\nport 2222\nidentityfile /tmp/alisa_key\n'

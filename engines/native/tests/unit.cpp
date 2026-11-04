@@ -14,6 +14,7 @@ std::string token(double expiry){
 }
 
 int main(int argc,char **argv){
+    assert(control_port==2000);
     fs::path dir=argv[1];fs::create_directories(dir);
     if(argc==4){
         ControlServer server(std::stoi(argv[3]),dir,[]{return json{{"ok",true}};},

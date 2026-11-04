@@ -53,7 +53,7 @@ int main(int argc,char **argv){
         }
         if(action=="url"){
             auto auth=read_json(state/"ui-auth.json");
-            std::cout<<json{{"port",18080},{"pairing_code",auth["code"]}}.dump()<<"\n";return 0;
+            std::cout<<json{{"port",control_port},{"pairing_code",auth["code"]}}.dump()<<"\n";return 0;
         }
         if(action=="status"){
             std::cout<<control_request(state,json::object()).dump(2)<<"\n";return 0;

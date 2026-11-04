@@ -26,6 +26,19 @@ class NativeStatus(unittest.TestCase):
    with self.subTest(output=output),patch.object(runtime.Station,'run',return_value=response):
     with self.assertRaises(PublicError):runtime.status(c)
 
+
+class PanelUrl(unittest.TestCase):
+ def test_native_panel_uses_station_ip_and_reported_port(self):
+  c=state.defaults('native');c['host']='192.168.1.50'
+  with patch.object(runtime,'native_action',return_value={'port':2000,'pairing_code':'12345678'}):
+   self.assertEqual(runtime.panel_url(c),{'url':'http://192.168.1.50:2000/','pairing_code':'12345678'})
+ def test_panel_requires_native_mode(self):
+  with self.assertRaises(ValueError):runtime.panel_url(state.defaults('bridge'))
+ def test_panel_rejects_invalid_native_port(self):
+  c=state.defaults('native');c['host']='192.168.1.50'
+  with patch.object(runtime,'native_action',return_value={'port':'2000'}):
+   with self.assertRaises(RuntimeError):runtime.panel_url(c)
+
 class BridgeStatus(unittest.TestCase):
  def test_dead_bridge_is_stopped_and_old_voice_error_is_not_current(self):
   c=state.defaults('bridge');c['host']='192.0.2.44'

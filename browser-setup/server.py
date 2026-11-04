@@ -17,9 +17,10 @@ state={'phase':'idle','message':'Ожидается подключение.'}
 pending={}
 steps={'connected':False,'installed':False,'login':False}
 
-def publish(phase,message):
+def publish(phase,message,panel=None):
     global state
     state={'phase':phase,'message':message, 'steps':dict(steps)}
+    if panel:state['panel']=panel
 
 def hostkey(host,port):
     transport=paramiko.Transport(socket.create_connection((host,port),timeout=6))
@@ -129,14 +130,16 @@ class Handler(BaseHTTPRequestHandler):
                     except Exception: current={}
                     if current.get('agent_connected'):
                         steps.update(installed=True,login=bool(current.get('login_saved')))
-                        publish('installed','Служба уже работает. Повторная установка не требуется.')
+                        panel=runtime.panel_url(c)
+                        publish('installed','Служба уже работает. Повторная установка не требуется. Откройте панель с телефона.',panel)
                         return
                     install.install(c,activate=True);autostart.set_enabled(c,True)
                     from alisa_cli.state import save
                     save(c);current=runtime.status(c)
                     if not current.get('agent_connected'):raise RuntimeError('service not ready')
                     steps.update(installed=True,login=bool(current.get('login_saved')))
-                    publish('installed','Установлено и запущено. Автозапуск включён.')
+                    panel=runtime.panel_url(c)
+                    publish('installed','Установлено и запущено. Автозапуск включён. Откройте панель с телефона.',panel)
                 launch(do_install,'Устанавливаем компоненты. Не закрывайте страницу…')
             elif self.path=='/api/login':
                 if not steps['installed']:raise ValueError('Сначала установите программу на колонку.')
@@ -156,7 +159,8 @@ class Handler(BaseHTTPRequestHandler):
                     c=load('native');r=runtime.status(c)
                     if not r.get('agent_connected'):raise RuntimeError('not running')
                     steps.update(connected=True,installed=True,login=bool(r.get('login_saved')))
-                    publish('installed','Установленная служба работает. Можно проверить вход или открыть чат на колонке.')
+                    panel=runtime.panel_url(c)
+                    publish('installed','Установленная служба работает. Откройте панель с телефона.',panel)
                 launch(current,'Проверяем существующую установку…')
             else:return self.respond(404,{'error':'Не найдено'})
             return self.respond(202,state)
