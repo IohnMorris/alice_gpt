@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $taskUrl = 'https://raw.githubusercontent.com/IohnMorris/alice_gpt/main/AlisaVoice-Mini2-browser-preview.zip'
-$expected = 'b9cd2276d67619840ca295685ebbff2ae84c540e466f42bc36a16c85f4dd3b61'
+$expected = 'f67aa3529cf700002b37d3198ffeb8717cb52b1bf79901df3cbf4c4d077ca4ae'
 $base = Join-Path $env:LOCALAPPDATA 'AlisaVoice-Setup'
 $folder = Join-Path $base ([guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $folder -Force | Out-Null
