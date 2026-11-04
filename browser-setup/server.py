@@ -140,11 +140,13 @@ class Handler(BaseHTTPRequestHandler):
                 launch(do_install,'Устанавливаем компоненты. Не закрывайте страницу…')
             elif self.path=='/api/login':
                 if not steps['installed']:raise ValueError('Сначала установите программу на колонку.')
-                if steps['login']:raise ValueError('Вход уже сохранён.')
+                change=bool(steps['login'])
                 def do_login():
                     c=load('native')
                     if c.get('mode')!='native' or not c.get('installed'):raise RuntimeError('not installed')
-                    p=subprocess.run([sys.executable,'-B','-X','utf8',str(PACKAGE/'alisa.py'),'native','login'],stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=1100,env=winssh.password_environment(c),creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+                    command=[sys.executable,'-B','-X','utf8',str(PACKAGE/'alisa.py'),'native','login']
+                    if change:command.append('change')
+                    p=subprocess.run(command,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=1100,env=winssh.password_environment(c),creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
                     if p.returncode:raise RuntimeError('login failed')
                     steps['login']=True
                     publish('complete','Вход сохранён. Откройте чат на колонке и задайте вопрос.')
