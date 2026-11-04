@@ -101,8 +101,7 @@ def install_key(config,password):
         write_private(path,key.private_bytes(s.Encoding.PEM,s.PrivateFormat.OpenSSH,s.NoEncryption()))
     key=library().Ed25519Key.from_private_key_file(str(path));public=key.get_name()+' '+key.get_base64()
     command='set -eu; [ "$(id -u)" = 0 ] || exit 9; umask 077; '
-    command+='if [ -d /data/opt/etc/dropbear ] && pidof dropbear >/dev/null 2>&1; then f=/data/opt/etc/dropbear/authorized_keys; '
-    command+='else mkdir -p "$HOME/.ssh"; f="$HOME/.ssh/authorized_keys"; fi; '
+    command+='mkdir -p "$HOME/.ssh"; f="$HOME/.ssh/authorized_keys"; '
     command+='touch "$f"; chmod 600 "$f"; grep -qFx '+shlex.quote(public)+' "$f" || printf "\\n%s\\n" '+shlex.quote(public)+' >> "$f"'
     candidate={**config,'identity':str(path)}
     authentication=config if password is not None or config.get('identity') else candidate
