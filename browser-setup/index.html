@@ -779,8 +779,8 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/app.js"></script>
-  // Toast notification (matches station-panel.html)
+<script src="/app.js">
+  // Toast notification (legacy fallback; live behavior is in app.js)
   let toastTimer;
   function toast(message) {
     const el = document.getElementById('toast');
