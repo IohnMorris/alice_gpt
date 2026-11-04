@@ -56,7 +56,7 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self,*a):pass
     def respond(self,status,body,kind='application/json; charset=utf-8'):
         if isinstance(body,dict):body=json.dumps(body,ensure_ascii=False).encode()
-        self.send_response(status);self.send_header('Content-Type',kind);self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff');self.send_header('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; frame-ancestors 'none'; base-uri 'none'");self.send_header('Content-Length',str(len(body)));self.end_headers();self.wfile.write(body)
+        self.send_response(status);self.send_header('Content-Type',kind);self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff');self.send_header('Content-Security-Policy',f"default-src 'self'; script-src 'self'; style-src 'self' 'nonce-{TOKEN}'; frame-ancestors 'none'; base-uri 'none'");self.send_header('Content-Length',str(len(body)));self.end_headers();self.wfile.write(body)
     def allowed(self):return self.headers.get('Host')==f'127.0.0.1:{PORT}'
     def do_GET(self):
         if not self.allowed():return self.respond(403,{'error':'Недопустимый адрес'})
