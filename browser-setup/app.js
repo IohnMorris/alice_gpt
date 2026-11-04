@@ -6,7 +6,7 @@ function render(s){const x=s.steps||{};for(const [key,id] of [['connected','conn
 async function run(path,body){try{let d=await api(path,body);render(d);while(d.phase==='running'){ $('#phase').textContent='Выполняется';$('#message').textContent=d.message;await new Promise(r=>setTimeout(r,1000));d=await api('/api/state');render(d)}render(d);$('#phase').textContent=d.phase==='failed'?'Не удалось выполнить шаг':'Готово';$('#message').textContent=d.message;if(d.phase==='fingerprint'){$('#fingerprintValue').textContent='Отпечаток: '+d.message+' — сверьте его с отпечатком колонки.';$('#connect').disabled=false}return d}catch(e){$('#phase').textContent='Ошибка';$('#message').textContent=e.message}}
 function endpoint(){return {host:$('#host').value.trim(),port:Number($('#port').value)}}
 $('#fingerprint').onclick=()=>run('/api/fingerprint',endpoint());
-$('#connect').onclick=()=>{const p=$('#password').value,k=$('#privateKey').value;$('#password').value='';$('#privateKey').value='';run('/api/connect',{...endpoint(),password:p,private_key:k})};
+$('#connect').onclick=()=>{const p=$('#password').value,k=$('#privateKey').value;$('#password').value='';$('#privateKey').value='';run('/api/connect',{...endpoint(),password:p,private_key:k,existing:$('#existingKey').checked})};
 $('#install').onclick=()=>run('/api/install',{});
 $('#login').onclick=()=>run('/api/login',{});
 $('#current').onclick=()=>run('/api/current',{});

@@ -39,7 +39,10 @@ def checked_host(data):
 
 def task(fn):
     try:fn()
-    except Exception:publish('failed','Шаг не выполнен. Проверьте подключение, пароль и состояние колонки; сохранённые данные не удалены.')
+    except Exception as error:
+        from alisa_cli.errors import PublicError
+        if isinstance(error,PublicError):publish('failed',str(error))
+        else:publish('failed','Шаг не выполнен. Проверьте подключение и данные SSH; сохранённые данные не удалены.')
     finally:LOCK.release()
 
 def launch(fn,message):
@@ -73,9 +76,9 @@ class Handler(BaseHTTPRequestHandler):
                     fp=hostkey(host,port);pending.clear();pending.update({'host':host,'port':port,'fingerprint':fp});publish('fingerprint',fp)
                 launch(inspect,'Проверяем SSH колонки…')
             elif self.path=='/api/connect':
-                host,port=checked_host(data);password=data.get('password','');private_key=data.get('private_key','')
+                host,port=checked_host(data);password=data.get('password','');private_key=data.get('private_key','');existing=data.get('existing',False)
                 if not isinstance(password,str) or not isinstance(private_key,str) or len(password)>512 or len(private_key)>20000:raise ValueError('Проверьте данные SSH.')
-                if bool(password)==bool(private_key):raise ValueError('Введите пароль SSH или приватный ключ.')
+                if type(existing) is not bool or sum((bool(password),bool(private_key),existing))!=1:raise ValueError('Выберите один способ входа: пароль, приватный ключ или сохранённый ключ.')
                 if private_key and 'PRIVATE KEY-----' not in private_key:raise ValueError('Для входа нужен приватный ключ, а не публичный.')
                 if pending.get('host')!=host or pending.get('port')!=port:raise ValueError('Сначала проверьте отпечаток SSH.')
                 fp=pending.get('fingerprint')
@@ -85,15 +88,21 @@ class Handler(BaseHTTPRequestHandler):
                     if c.get('host')!=host or c.get('port')!=port:c=defaults('native')
                     c.update(host=host,port=port,user='root',ssh_explicit=True)
                     winssh.trust(c,lambda h,p,found: secrets.compare_digest(found,fp))
-                    if private_key:
-                        from alisa_cli.state import HOME,write_private
+                    if existing:
+                        if not c.get('identity'):raise ValueError('Сохранённый ключ для этого адреса не найден.')
+                        if winssh.run(c,'id -u').stdout.strip()!=b'0':raise ValueError('SSH-ключ не даёт права root.')
+                    elif private_key:
+                        from alisa_cli.state import HOME,write_private,save
                         import uuid
-                        temporary=HOME/'ssh'/('import-'+uuid.uuid4().hex)
+                        imported=HOME/'ssh'/('import-'+uuid.uuid4().hex)
                         try:
-                            write_private(temporary,(private_key.strip()+'\n').encode('utf-8'))
-                            c['identity']=str(temporary)
-                            winssh.install_key(c,None)
-                        finally:temporary.unlink(missing_ok=True)
+                            write_private(imported,(private_key.strip()+'\n').encode('utf-8'))
+                            c['identity']=str(imported)
+                            if winssh.run(c,'id -u').stdout.strip()!=b'0':raise ValueError('SSH-ключ не даёт права root.')
+                            save(c)
+                        except BaseException:
+                            imported.unlink(missing_ok=True)
+                            raise
                     else:winssh.install_key(c,password)
                     pending.clear();steps.update(connected=True,installed=False,login=False)
                     try:
