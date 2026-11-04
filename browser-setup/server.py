@@ -15,10 +15,11 @@ TOKEN=secrets.token_urlsafe(32)
 LOCK=threading.Lock()
 state={'phase':'idle','message':'Ожидается подключение.'}
 pending={}
+steps={'connected':False,'installed':False,'login':False}
 
 def publish(phase,message):
     global state
-    state={'phase':phase,'message':message}
+    state={'phase':phase,'message':message, 'steps':dict(steps)}
 
 def hostkey(host,port):
     transport=paramiko.Transport(socket.create_connection((host,port),timeout=6))
@@ -54,7 +55,7 @@ class Handler(BaseHTTPRequestHandler):
     def allowed(self):return self.headers.get('Host')==f'127.0.0.1:{PORT}'
     def do_GET(self):
         if not self.allowed():return self.respond(403,{'error':'Недопустимый адрес'})
-        if self.path=='/api/state':return self.respond(200,state)
+        if self.path=='/api/state':return self.respond(200,{**state,'steps':dict(steps)})
         if self.path in ('/','/app.js','/style.css'):
             name={'/':'index.html','/app.js':'app.js','/style.css':'style.css'}[self.path];raw=(ROOT/name).read_bytes().replace(b'__TOKEN__',TOKEN.encode());return self.respond(200,raw,{'index.html':'text/html; charset=utf-8','app.js':'text/javascript; charset=utf-8','style.css':'text/css; charset=utf-8'}[name])
         return self.respond(404,{'error':'Не найдено'})
@@ -62,7 +63,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.allowed() or self.headers.get('Origin')!=ORIGIN or not secrets.compare_digest(self.headers.get('X-Panel-Token',''),TOKEN):return self.respond(403,{'error':'Запрос отклонён'})
         try:
             n=int(self.headers.get('Content-Length','0'))
-            if n<0 or n>2048:raise ValueError('Неверный размер запроса.')
+            if n<0 or n>32768:raise ValueError('Неверный размер запроса.')
             data=json.loads(self.rfile.read(n) or b'{}')
             if not isinstance(data,dict):raise ValueError('Некорректные данные.')
             if self.path=='/api/fingerprint':
@@ -72,8 +73,10 @@ class Handler(BaseHTTPRequestHandler):
                     fp=hostkey(host,port);pending.clear();pending.update({'host':host,'port':port,'fingerprint':fp});publish('fingerprint',fp)
                 launch(inspect,'Проверяем SSH колонки…')
             elif self.path=='/api/connect':
-                host,port=checked_host(data);password=data.get('password')
-                if not isinstance(password,str) or not password or len(password)>512:raise ValueError('Введите пароль SSH.')
+                host,port=checked_host(data);password=data.get('password','');private_key=data.get('private_key','')
+                if not isinstance(password,str) or not isinstance(private_key,str) or len(password)>512 or len(private_key)>20000:raise ValueError('Проверьте данные SSH.')
+                if bool(password)==bool(private_key):raise ValueError('Введите пароль SSH или приватный ключ.')
+                if private_key and 'PRIVATE KEY-----' not in private_key:raise ValueError('Для входа нужен приватный ключ, а не публичный.')
                 if pending.get('host')!=host or pending.get('port')!=port:raise ValueError('Сначала проверьте отпечаток SSH.')
                 fp=pending.get('fingerprint')
                 def connect():
@@ -82,27 +85,58 @@ class Handler(BaseHTTPRequestHandler):
                     if c.get('host')!=host or c.get('port')!=port:c=defaults('native')
                     c.update(host=host,port=port,user='root',ssh_explicit=True)
                     winssh.trust(c,lambda h,p,found: secrets.compare_digest(found,fp))
-                    winssh.install_key(c,password)
-                    pending.clear();publish('connected','Подключение и права root проверены.')
+                    if private_key:
+                        from alisa_cli.state import HOME,write_private
+                        import uuid
+                        temporary=HOME/'ssh'/('import-'+uuid.uuid4().hex)
+                        try:
+                            write_private(temporary,(private_key.strip()+'\n').encode('utf-8'))
+                            c['identity']=str(temporary)
+                            winssh.install_key(c,None)
+                        finally:temporary.unlink(missing_ok=True)
+                    else:winssh.install_key(c,password)
+                    pending.clear();steps.update(connected=True,installed=False,login=False)
+                    try:
+                        current=runtime.status(c)
+                        if current.get('agent_connected'):
+                            steps.update(installed=True,login=bool(current.get('login_saved')))
+                    except Exception:pass
+                    publish('connected','Подключение и права root проверены.')
                 launch(connect,'Проверяем пароль и права root…')
             elif self.path=='/api/install':
+                if not steps['connected']:raise ValueError('Сначала подключите колонку.')
+                if steps['installed']:raise ValueError('Служба уже установлена и работает.')
                 def do_install():
-                    c=load('native');install.install(c,activate=True);autostart.set_enabled(c,True)
+                    c=load('native')
+                    try: current=runtime.status(c)
+                    except Exception: current={}
+                    if current.get('agent_connected'):
+                        steps.update(installed=True,login=bool(current.get('login_saved')))
+                        publish('installed','Служба уже работает. Повторная установка не требуется.')
+                        return
+                    install.install(c,activate=True);autostart.set_enabled(c,True)
                     from alisa_cli.state import save
-                    save(c);publish('installed','Установлено и запущено. Автозапуск включён.')
+                    save(c);current=runtime.status(c)
+                    if not current.get('agent_connected'):raise RuntimeError('service not ready')
+                    steps.update(installed=True,login=bool(current.get('login_saved')))
+                    publish('installed','Установлено и запущено. Автозапуск включён.')
                 launch(do_install,'Устанавливаем компоненты. Не закрывайте страницу…')
             elif self.path=='/api/login':
+                if not steps['installed']:raise ValueError('Сначала установите программу на колонку.')
+                if steps['login']:raise ValueError('Вход уже сохранён.')
                 def do_login():
                     c=load('native')
                     if c.get('mode')!='native' or not c.get('installed'):raise RuntimeError('not installed')
                     p=subprocess.run([sys.executable,'-B','-X','utf8',str(PACKAGE/'alisa.py'),'native','login'],stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=1100,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
                     if p.returncode:raise RuntimeError('login failed')
+                    steps['login']=True
                     publish('complete','Вход сохранён. Откройте чат на колонке и задайте вопрос.')
                 launch(do_login,'Войдите в ChatGPT в открывшемся окне браузера…')
             elif self.path=='/api/current':
                 def current():
                     c=load('native');r=runtime.status(c)
                     if not r.get('agent_connected'):raise RuntimeError('not running')
+                    steps.update(connected=True,installed=True,login=bool(r.get('login_saved')))
                     publish('installed','Установленная служба работает. Можно проверить вход или открыть чат на колонке.')
                 launch(current,'Проверяем существующую установку…')
             else:return self.respond(404,{'error':'Не найдено'})
