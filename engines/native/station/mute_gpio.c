@@ -98,6 +98,20 @@ static int write_all(int fd, const char *text) {
  * muted. Each caller owns an unlinked file, so concurrent reads cannot race. */
 static int converted_gpio(void) {
     open_fn original_open = (open_fn)next("open");
+    /* Mini 2: explicit opt-in for a verified sysfs input. Fail closed on
+     * missing, malformed, or unreadable data; never cache the switch. */
+    const char *mini = getenv("ALICE_MINI2_MUTE_VALUE");
+    if (mini && mini[0] == '/') {
+        char value[4]; int input = original_open(mini, 0, 0); long count = -1;
+        if (input >= 0) { count = read(input, value, sizeof(value)); close(input); }
+        int enabled = count == 2 && value[0] == '1' && value[1] == '\n';
+        char tmp[] = "/tmp/alisa-mute-gpio-XXXXXX";
+        int fd = mkstemp(tmp);
+        if (fd < 0) return -1;
+        const char *listing = enabled ? " gpio-0 ( |mute-switch ) in  hi\n" : " gpio-0 ( |mute-switch ) in  lo\n";
+        int reader = write_all(fd, listing) ? original_open(tmp, 02000000, 0) : -1;
+        unlink(tmp); close(fd); return reader;
+    }
     char chunk[512], line[512];
     size_t used = 0, total = 0;
     int states = 0, invalid = 0, overflow = 0, legacy = 0;
@@ -185,6 +199,7 @@ void *fopen(const char *path, const char *mode) {
     if (auto_convert(path, read_only)) {
         int fd = converted_gpio();
         if (fd >= 0) return converted_stream(fd);
+        if (getenv("ALICE_MINI2_MUTE_VALUE")) return 0;
     }
     return original(redirect(path, read_only), mode);
 }
@@ -196,6 +211,7 @@ void *fopen64(const char *path, const char *mode) {
     if (auto_convert(path, read_only)) {
         int fd = converted_gpio();
         if (fd >= 0) return converted_stream(fd);
+        if (getenv("ALICE_MINI2_MUTE_VALUE")) return 0;
     }
     return original(redirect(path, read_only), mode);
 }
@@ -210,6 +226,7 @@ int open(const char *path, int flags, ...) {
     if (auto_convert(path, read_only)) {
         int fd = converted_gpio();
         if (fd >= 0) return fd;
+        if (getenv("ALICE_MINI2_MUTE_VALUE")) return -1;
     }
     return original(redirect(path, read_only), flags, mode);
 }
@@ -224,6 +241,7 @@ int open64(const char *path, int flags, ...) {
     if (auto_convert(path, read_only)) {
         int fd = converted_gpio();
         if (fd >= 0) return fd;
+        if (getenv("ALICE_MINI2_MUTE_VALUE")) return -1;
     }
     return original(redirect(path, read_only), flags, mode);
 }
@@ -238,6 +256,7 @@ int openat(int directory, const char *path, int flags, ...) {
     if (auto_convert(path, read_only)) {
         int fd = converted_gpio();
         if (fd >= 0) return fd;
+        if (getenv("ALICE_MINI2_MUTE_VALUE")) return -1;
     }
     return original(directory, redirect(path, read_only), flags, mode);
 }

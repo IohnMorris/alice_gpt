@@ -66,7 +66,10 @@ case "${1:-}" in
             # polarity; mute_gpio.so converts that listing on each read so the
             # physical mute switch keeps working.
             if [ -r "$BASE/mute_gpio.so" ]; then
-                if tr '\000' '\n' < /proc/device-tree/compatible | grep -Eq '^(yandex,station-midi|yandexmidi|station-midi)$'; then
+                if tr '\000' '\n' < /proc/device-tree/compatible | grep -Fxq 'yandex,station-mini2'; then
+                    export ALICE_MINI2_MUTE_VALUE=/sys/class/gpio/gpio414/value
+                    export LD_PRELOAD="${LD_PRELOAD:+$LD_PRELOAD }$BASE/mute_gpio.so"
+                elif tr '\000' '\n' < /proc/device-tree/compatible | grep -Eq '^(yandex,station-midi|yandexmidi|station-midi)$'; then
                     export LD_PRELOAD="${LD_PRELOAD:+$LD_PRELOAD }$BASE/mute_gpio.so"
                 elif grep -Fq 'yandex,station-micro' /proc/device-tree/compatible &&
                      ! grep -q '|mute-switch ' /sys/kernel/debug/gpio 2>/dev/null; then

@@ -45,7 +45,7 @@ def profiles(launch,quasar,model=None):
                 if any(x.startswith('LD_PRELOAD=') for x in env):raise RuntimeError('Stock launcher already has a preload')
                 if kind=='--platformd':
                     extra=[f'LD_PRELOAD={BASE}/vqe_tap.so',f'ALICE_CAPTURE_SOCKET={RUNTIME}/microphone.sock']
-                    if model=='yandexmidi':
+                    if model in ('yandexmidi', 'mini2'):
                         # Whisper-level vqe_0 floats on Station 2; see vqe_tap.c.
                         extra.append('ALICE_CAPTURE_GAIN=16')
                 else:

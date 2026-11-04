@@ -84,7 +84,8 @@ def install(config,activate=True,dry_run=False):
         if dry_run:return {'dry_run':True,'mode':'native','preflight':preflight,'verified_files':len(files),'storage':space}
         sizes=storage.remote_sizes(s,files)
         changed={path:data for path,data in files.items() if sizes.get(path,(0,''))[1]!=hashlib.sha256(data).hexdigest()}
-        old_status=status(config);was_running=old_status.get('agent_connected',False)
+        old_status=status(config) if s.run('test -x '+NATIVE+'/bin/alisa-standalone',check=False).returncode==0 else {}
+        was_running=old_status.get('agent_connected',False)
         backup=HOME/'native/backups'/str(time.time_ns());saved={}
         # No login files are included in this transaction.
         if changed:

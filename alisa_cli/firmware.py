@@ -11,6 +11,8 @@ BUILDS={
     'lite2':(('station-lite2','yandex,station-lite2','plum','yandex,prune'),[(MAIND,VQE)]),
     'lite1':(('yandex,station-micro',),[('2dad0ffc61ba73d15ea813b754d7a56866d0477c321dcad9138b8d06e14ddbf1',
                                        'df67c7ad9fb9f2f9c473ba2aaed7663a0e898a2c6622993e65d3b8834a0b3646')]),
+    # Experimental: no firmware is declared verified until full hardware tests pass.
+    'mini2':(('yandex,station-mini2',), []),
     # Yandex Station 2 (yandexmidi): the pinned pair is the firmware the model
     # was validated on (live voice dialog, one station). Any other build stays
     # 'unverified' and installs with the usual warning.
@@ -19,7 +21,7 @@ BUILDS={
                     'e3f80b79cd5b7f9422b790b3fe81cc41883e1c07914e6b474f4fd9313e3b84af')]),
 }
 ARCHITECTURES=('aarch64','armv7l','armv8l','arm')
-MODEL_NAMES={'lite1':'Станция Лайт 1','lite2':'Станция Лайт 2','yandexmidi':'Станция 2'}
+MODEL_NAMES={'lite1':'Станция Лайт 1','lite2':'Станция Лайт 2','mini2':'Станция Мини 2','yandexmidi':'Станция 2'}
 LIGHTING_UNAVAILABLE='Подсветка GPT недоступна для этой модели.'
 WARNING=('Эта сборка прошивки ещё не проверена. Установка разрешена, '
          'но работа микрофона, звука и голосовых команд не гарантируется.')
@@ -42,3 +44,4 @@ def classify(device_tree,pair):
     status='unsupported-model' if not model else 'verified' if known else 'unverified' if present else 'unavailable'
     return {'model':model,'firmware_abi_supported':known,'firmware_files_present':present,
             'firmware_status':status,'warnings':[WARNING] if status=='unverified' else []}
+

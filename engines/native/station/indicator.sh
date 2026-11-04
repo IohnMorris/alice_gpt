@@ -16,7 +16,7 @@ if [ -z "${ALICE_LED_ROOT:-}" ]; then
     if [ -n "${ALICE_PANEL_FB:-}" ]; then
         # Explicit framebuffer paths are also used by isolated device tests.
         panel_mode=1
-    elif [ ! -e "$LED:red:ring1" ] && [ ! -e /sys/class/leds/micro:red:ring1 ]; then
+    elif [ -z "${ALICE_MINI2_LED_ROOT:-}" ] && [ ! -e /sys/class/leds/mini2:red:ring1 ] && [ ! -e "$LED:red:ring1" ] && [ ! -e /sys/class/leds/micro:red:ring1 ]; then
         # Do not send RGBW bytes to another model's framebuffer (Lite 2 is 3x1).
         [ -c /dev/fb0 ] &&
         [ "$(cat /sys/class/graphics/fb0/virtual_size 2>/dev/null)" = 89,1 ] &&
@@ -85,6 +85,103 @@ mute_status() {
     [ "$no_mute_switch" = 1 ] && return 1
     return 2
 }
+# Mini 2 has six independent RGB LEDs and a different microphone input.
+# This backend is intentionally opt-in by exact device-tree marker (or fixture).
+mini2_mode=0
+if [ -n "${ALICE_MINI2_LED_ROOT:-}" ]; then
+    mini2_mode=1
+elif [ -z "${ALICE_LED_ROOT:-}" ] && tr '\000' '\n' < /proc/device-tree/compatible 2>/dev/null | grep -Fxq 'yandex,station-mini2'; then
+    mini2_mode=1
+    ALICE_MINI2_LED_ROOT=/sys/class/leds/mini2
+fi
+if [ "$mini2_mode" = 1 ]; then
+    mini_led=$ALICE_MINI2_LED_ROOT
+    mini_switch=${ALICE_MINI2_MUTE_VALUE:-/sys/class/gpio/gpio414/value}
+    mini_owned=0
+    mini_saved=''; mini_painted=''
+    mini_external=0; mini_external_frame=''; mini_external_stable=0
+    mini_enabled() { [ -r "$mini_switch" ] || return 1; IFS= read -r mini_switch_value < "$mini_switch" || return 1; [ "$mini_switch_value" = 1 ]; }
+    mini_read() {
+        mini_current=''
+        for mini_i in 1 2 3 4 5 6; do
+            for mini_c in red green blue; do
+                IFS= read -r mini_v < "$mini_led:$mini_c:ring$mini_i/brightness" || return 1
+                case "$mini_v" in ''|*[!0-9]*) return 1 ;; esac
+                mini_current="$mini_current $mini_v"
+            done
+        done
+    }
+    mini_write() {
+        set -- $1
+        for mini_i in 1 2 3 4 5 6; do
+            for mini_c in red green blue; do
+                mini_enabled || return 1
+                printf '%s\n' "$1" > "$mini_led:$mini_c:ring$mini_i/brightness" || return 1
+                shift
+            done
+        done
+    }
+    mini_release() {
+        if [ "$mini_owned" = 1 ]; then
+            if mini_enabled && mini_read && [ "$mini_current" = "$mini_painted" ]; then
+                mini_write "$mini_saved" || :
+            fi
+            mini_owned=0
+            printf 'STOCK\n'
+        fi
+    }
+    trap 'mini_release; exit 0' TERM INT HUP
+    trap mini_release EXIT
+    while IFS= read -r mini_cmd; do
+        case "$mini_cmd" in
+            B) mini_decoded=$blue ;;
+            F\ *) decode_frame "${mini_cmd#F }" || continue; mini_decoded=$task_led_decoded
+                  if [ "$mini_decoded" = ' 0 0 0 0 0 0 0 0 0' ] && listening_enabled; then listening_frame; mini_decoded=$task_led_decoded; fi ;;
+            0) mini_release; continue ;;
+            *) continue ;;
+        esac
+        if ! mini_enabled || ! mini_read; then mini_owned=0; mini_external=0; continue; fi
+        # Do not fight a firmware animation. Wait for four unchanged samples
+        # before taking control again; never restore over the external frame.
+        if [ "$mini_owned" = 1 ] && [ "$mini_current" != "$mini_painted" ]; then
+            mini_owned=0; mini_external=1; mini_external_frame=$mini_current; mini_external_stable=0
+            continue
+        fi
+        if [ "$mini_external" = 1 ]; then
+            if [ "$mini_current" = "$mini_external_frame" ]; then
+                mini_external_stable=$((mini_external_stable + 1))
+            else
+                mini_external_frame=$mini_current; mini_external_stable=0
+            fi
+            [ "$mini_external_stable" -ge 4 ] || continue
+            mini_external=0
+        fi
+        if [ "$mini_owned" = 0 ] || [ "$mini_current" != "$mini_painted" ]; then
+            # Yield to an external red warning, and do not overwrite it on exit.
+            set -- $mini_current
+            if [ "$1" -gt 0 ] && [ "$2" = 0 ] && [ "$3" = 0 ]; then mini_owned=0; continue; fi
+        fi
+        if [ "$mini_owned" = 0 ]; then mini_saved=$mini_current; mini_owned=1; fi
+        set -- $mini_decoded
+        mini_requested=" $1 $2 $3 $1 $2 $3 $4 $5 $6 $4 $5 $6 $7 $8 $9 $7 $8 $9"
+        # Smooth abrupt transitions between listening and speaking frames.
+        # Check mute for every channel inside mini_write, including transitions.
+        set -- $mini_current $mini_requested
+        mini_blended=''
+        mini_n=0
+        while [ "$mini_n" -lt 18 ]; do
+            mini_from=$1; mini_to=${19}
+            if [ "$mini_to" -gt $((mini_from + 20)) ]; then mini_to=$((mini_from + 20)); fi
+            if [ "$mini_from" -gt $((mini_to + 20)) ]; then mini_to=$((mini_from - 20)); fi
+            mini_blended="$mini_blended $mini_to"
+            shift; mini_n=$((mini_n + 1))
+        done
+        if [ "$mini_current" != "$mini_blended" ]; then mini_write "$mini_blended" || { mini_owned=0; continue; }; fi
+        mini_painted=$mini_blended
+        case "$mini_cmd" in B) printf 'BLUE\n' ;; F\ *) printf 'FRAME\n' ;; esac
+    done
+    exit 0
+fi
 # --- Station 2 panel backend (88 LEDs, zigzag map, /dev/fb0 RGBW) ---
 PANEL_FB=${ALICE_PANEL_FB:-/dev/fb0}
 # led x y zone: zone 1..3 by distance from the center (ring1 = inner),
