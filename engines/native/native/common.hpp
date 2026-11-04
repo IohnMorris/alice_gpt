@@ -62,6 +62,7 @@ inline void write_text(const fs::path &path,const std::string &text) {
     if(dir>=0){fsync(dir);close(dir);}
 }
 
+inline long rss_kib() {
     std::ifstream f("/proc/self/status");std::string line;
     while(std::getline(f,line))if(line.rfind("VmRSS:",0)==0)return std::stol(line.substr(6));
     return 0;
