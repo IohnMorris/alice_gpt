@@ -118,10 +118,19 @@ def start(config,foreground=False):
         if config['vpn'].get('enabled'):
             if s.run(TOOLS+'/vpn.sh status',check=False).returncode:raise RuntimeError('VLESS выключен. Запустите alisa native vpn start; прямое подключение запрещено.')
         apply_settings(config);s.run(NATIVE+'/run.sh start')
+        last_error=None
         for _ in range(80):
-            result=status(config)
-            if result.get('agent_connected'):return result
+            try:
+                result=status(config)
+                last_error=None
+                if result.get('agent_connected'):return result
+            except PublicError:
+                raise
+            except RuntimeError as error:
+                # The control endpoint may briefly return an error while starting.
+                last_error=error
             time.sleep(.5)
+        if last_error:raise last_error
         raise RuntimeError('Нативный режим не запустился; штатная Алиса должна восстановиться автоматически')
     if sys.platform!='linux':raise RuntimeError('Браузерный мост Windows — следующий этап, текущая версия работает в Linux')
     if s.run('test -f /tmp/alisa-standalone/monitor.pid',check=False).returncode==0:

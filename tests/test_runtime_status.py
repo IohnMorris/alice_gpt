@@ -27,6 +27,19 @@ class NativeStatus(unittest.TestCase):
     with self.assertRaises(PublicError):runtime.status(c)
 
 
+class NativeStart(unittest.TestCase):
+ def test_transient_status_error_during_start_is_retried(self):
+  c=state.defaults('native');c.update(host='192.0.2.44',installed=True)
+  with patch.object(runtime.Station,'text',return_value=''), patch.object(runtime.Station,'run'), patch.object(runtime,'apply_settings'), patch.object(runtime.time,'sleep'), patch.object(runtime,'status',side_effect=[RuntimeError('Команда завершилась с кодом 2'),{'agent_connected':True}]) as status:
+   self.assertTrue(runtime.start(c)['agent_connected'])
+   self.assertEqual(status.call_count,2)
+
+ def test_ssh_failure_is_not_retried(self):
+  c=state.defaults('native');c.update(host='192.0.2.44',installed=True)
+  with patch.object(runtime.Station,'text',return_value=''), patch.object(runtime.Station,'run'), patch.object(runtime,'apply_settings'), patch.object(runtime.time,'sleep'), patch.object(runtime,'status',side_effect=PublicError('ssh_unreachable')) as status:
+   with self.assertRaises(PublicError):runtime.start(c)
+   self.assertEqual(status.call_count,1)
+
 class PanelUrl(unittest.TestCase):
  def test_native_panel_uses_station_ip_and_reported_port(self):
   c=state.defaults('native');c['host']='192.168.1.50'
