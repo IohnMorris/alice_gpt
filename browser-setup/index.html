@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="theme-color" content="#18231f" />
-<title>ALISA VOICE · MINI 2 — Установка голосового чата</title>
+<title>ChatGPT на Яндекс Станции — Установка голосового чата</title>
 <style nonce="__TOKEN__">
   :root {
     --ink: #202b27;
@@ -326,7 +326,7 @@
     .brand-copy, .nav-label, .nav-text, .nav-badge, .sidebar-switch, .device-kicker, .device-name, .device-meta { display:none; }
     .nav button { justify-content:center; padding:0; }
     .sidebar-bottom { display:flex; justify-content:center; padding:16px 0 0; }
-    .sidebar-bottom:after { content:"M2"; color:#b8c9bd; font-size:10px; letter-spacing:.1em; }
+    .sidebar-bottom:after { content:"ЯС"; color:#b8c9bd; font-size:10px; letter-spacing:.1em; }
     .topbar { padding:0 25px; }
     .content { padding:32px 25px 48px; }
     .installer-grid { grid-template-columns: 1fr; }
@@ -352,6 +352,18 @@
     .status-right { width: 100%; justify-content: space-between; }
     .form-row, .option-grid { grid-template-columns:1fr; }
   }
+
+  [data-theme="dark"] { color-scheme: dark; --ink:#e5ece6; --muted:#aab8ad; --muted-2:#93a399; --line:#35463b; --paper:#151e19; --surface:#202d25; --forest:#82b895; --forest-deep:#669c78; --sage:#2b4232; --shadow:none; }
+  [data-theme="dark"] body { background:var(--paper); color:var(--ink); }
+  [data-theme="dark"] .topbar, [data-theme="dark"] .panel, [data-theme="dark"] .status-card { background:var(--surface); border-color:var(--line); }
+  [data-theme="dark"] .btn, [data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea, [data-theme="dark"] .option, [data-theme="dark"] .palette { background:#27372d; color:#edf3ed; border-color:#526759; }
+  [data-theme="dark"] .btn.primary { background:#426c51; color:white; }
+  [data-theme="dark"] .option.selected, [data-theme="dark"] .palette.selected, [data-theme="dark"] .notice, [data-theme="dark"] .pairing-card, [data-theme="dark"] .state-chip { background:#2d4233; color:#dceade; border-color:#526d59; }
+  [data-theme="dark"] .panel-title, [data-theme="dark"] .status-title, [data-theme="dark"] .notice strong, [data-theme="dark"] .field label, [data-theme="dark"] .quick-name { color:#e0ebe1; }
+  [data-theme="dark"] .panel-head, [data-theme="dark"] .diagnostic-row, [data-theme="dark"] .quick-item, [data-theme="dark"] .saved-row { border-color:#3b4a3f; }
+  [data-theme="dark"] .subtitle, [data-theme="dark"] .status-sub, [data-theme="dark"] .panel-note, [data-theme="dark"] .page-foot, [data-theme="dark"] .field-help, [data-theme="dark"] .step-desc, [data-theme="dark"] .palette span, [data-theme="dark"] small { color:#b9c8bc; }
+  [data-theme="dark"] .phone-url-box, [data-theme="dark"] .auth-pane, [data-theme="dark"] .fingerprint-box { background:#27372d; border-color:#526759; color:#e0ebe1; }
+  .theme-switch { border:1px solid #9bab9e; background:transparent; color:inherit; border-radius:6px; padding:8px 10px; font:inherit; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -366,7 +378,7 @@
         </svg>
       </div>
       <div class="brand-copy">
-        <div class="brand-name">ALISA VOICE · MINI 2</div>
+        <div class="brand-name">ChatGPT на Яндекс Станции</div>
         <div class="brand-caption">Local Setup Wizard</div>
       </div>
     </div>
@@ -426,17 +438,17 @@
   <main class="main">
     <header class="topbar">
       <div class="crumb">
-        <span>ALISA VOICE</span><span>／</span><strong>MINI 2 · Установка</strong>
+        <span>ALISA VOICE</span><span>／</span><strong>Установка</strong>
       </div>
-      <div class="top-right">
+      <div class="top-right"><button type="button" class="theme-switch" id="theme-switch" aria-label="Переключить тему">◐ Тема</button>
         <div class="local-label">
           <i class="local-dot"></i>
           <span>Установка работает на этом компьютере</span>
         </div>
-        <a class="btn sm" href="station-panel.html" title="Перейти в локальную панель управления">
+        <a class="btn sm" id="open-panel" href="#phone-card" title="Открыть панель управления">
           Открыть панель ↗
         </a>
-        <div class="avatar">M2</div>
+        <div class="avatar">ЯС</div>
       </div>
     </header>
 
@@ -444,7 +456,7 @@
       <!-- Page Head -->
       <div class="page-head">
         <div>
-          <div class="eyebrow">ALISA VOICE · MINI 2</div>
+          <div class="eyebrow">ChatGPT на Яндекс Станции</div>
           <h1>Установка голосового чата</h1>
           <p class="subtitle">Подключите колонку и войдите в ChatGPT. После установки голосовой чат работает без компьютера.</p>
         </div>
@@ -601,7 +613,7 @@
                 <div class="diagnostic-row">
                   <div>
                     <strong>Проверка совместимости окружения</strong>
-                    <small>Яндекс Станция Mini 2 · архитектура ARM64</small>
+                    <small>Совместимость и архитектура колонки</small>
                   </div>
                   <span class="diag-state" id="install-row-1">СОВМЕСТИМО</span>
                 </div>
@@ -621,7 +633,7 @@
                 </div>
               </div>
 
-              <div class="mini-line"><span id="install-progress" style="width: 100%"></span></div>
+              <div class="mini-line"><span id="install-progress" style="width: 0%"></span></div><p id="install-progress-label" role="status" aria-live="polite">Ожидает установки</p>
 
               <div class="actions">
                 <button class="btn primary" type="button" data-action="install-station">
@@ -695,7 +707,7 @@
               <div class="pairing-card">
                 <div>
                   <div class="pairing-label">Код сопряжения</div>
-                  <div class="pairing-code" id="pairing-code-display">12237648</div>
+                  <div class="pairing-code" id="pairing-code-display">—</div>
                   <div class="pairing-sub">Для быстрого доступа с телефона</div>
                 </div>
                 <button class="btn sm" type="button" data-action="copy-code">
@@ -726,7 +738,7 @@
                 </div>
                 <div class="diagnostic-row">
                   <div>
-                    <strong>Веб-панель :18080</strong>
+                    <strong>Веб-панель</strong>
                     <small>Доступность в локальной сети</small>
                   </div>
                   <span class="diag-state" id="service-check-2">ДОСТУПНА</span>
@@ -749,15 +761,15 @@
           <!-- Info Notice -->
           <div class="notice">
             <strong>Автономная работа</strong>
-            После выполнения всех трёх шагов голосовой чат и панель на телефоне работают напрямую на Яндекс Станции Mini 2 — компьютер можно выключить.
+            После выполнения всех трёх шагов голосовой чат и панель на телефоне работают напрямую на Яндекс Станции — компьютер можно выключить.
           </div>
 
         </aside>
       </div>
 
       <div class="page-foot">
-        <span>ALISA VOICE · MINI 2 · Мастер установки голосового чата</span>
-        <span>Совместимо с локальной панелью управления (:18080)</span>
+        <span>ChatGPT на Яндекс Станции · Мастер установки голосового чата</span>
+        <span>Совместимо с локальной панелью управления </span>
       </div>
     </div>
   </main>
@@ -765,236 +777,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/app.js">
-  // Toast notification (legacy fallback; live behavior is in app.js)
-  let toastTimer;
-  function toast(message) {
-    const el = document.getElementById('toast');
-    el.textContent = message;
-    el.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
-  }
-
-  // Clipboard helper compatible with iframe/local environments
-  function copyText(text, successMsg) {
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(() => toast(successMsg)).catch(() => fallbackCopy(text, successMsg));
-    } else {
-      fallbackCopy(text, successMsg);
-    }
-  }
-  function fallbackCopy(text, successMsg) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand('copy'); toast(successMsg); }
-    catch (e) { toast('Скопировано: ' + text); }
-    document.body.removeChild(ta);
-  }
-
-  // SSH Authentication Option Switcher
-  const authButtons = [...document.querySelectorAll('#ssh-auth-options .option')];
-  const authPanes = {
-    password: document.getElementById('auth-pane-password'),
-    privkey: document.getElementById('auth-pane-privkey'),
-    passwordless: document.getElementById('auth-pane-passwordless'),
-    localkey: document.getElementById('auth-pane-localkey')
-  };
-
-  authButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const mode = btn.dataset.auth;
-      authButtons.forEach(b => b.classList.toggle('selected', b === btn));
-      Object.entries(authPanes).forEach(([key, pane]) => {
-        pane.classList.toggle('active', key === mode);
-      });
-    });
-  });
-
-  // Live IP sync with Phone Panel URL
-  const ipInput = document.getElementById('ssh-ip');
-  const phoneUrlText = document.getElementById('phone-url-text');
-  const bannerIp = document.getElementById('banner-ip');
-
-  ipInput.addEventListener('input', () => {
-    const ip = ipInput.value.trim() || '192.168.1.151';
-    const url = `http://${ip}:18080/`;
-    phoneUrlText.textContent = url;
-    phoneUrlText.href = url;
-    bannerIp.textContent = url;
-  });
-
-  // Sidebar navigation & highlight
-  const navButtons = [...document.querySelectorAll('.nav button')];
-  const stepPanels = [...document.querySelectorAll('.step-panel')];
-
-  navButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      navButtons.forEach(b => b.classList.toggle('active', b === btn));
-      const targetId = btn.dataset.nav;
-
-      if (targetId === 'all') {
-        stepPanels.forEach(p => p.classList.remove('hidden-step'));
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
-      }
-
-      // Ensure all steps are visible and scroll smoothly to the target card
-      stepPanels.forEach(p => p.classList.remove('hidden-step'));
-      const targetEl = document.getElementById(targetId);
-      if (targetEl) {
-        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        targetEl.classList.add('highlight-pulse');
-        setTimeout(() => targetEl.classList.remove('highlight-pulse'), 1400);
-      }
-    });
-  });
-
-  // Preset State Switcher ("✓ Готово" vs "С нуля")
-  const presetDoneBtn = document.getElementById('preset-done');
-  const presetFreshBtn = document.getElementById('preset-fresh');
-
-  function setInstallerPreset(isDone) {
-    presetDoneBtn.classList.toggle('active', isDone);
-    presetFreshBtn.classList.toggle('active', !isDone);
-
-    const chip1 = document.getElementById('chip-step-1');
-    const chip2 = document.getElementById('chip-step-2');
-    const chip3 = document.getElementById('chip-step-3');
-    const bannerChip = document.getElementById('banner-chip');
-    const bannerTitle = document.getElementById('banner-title');
-    const bannerSub = document.getElementById('banner-sub');
-    const progress = document.getElementById('install-progress');
-    const loginBtn = document.getElementById('btn-chatgpt-login');
-
-    const nav1 = document.getElementById('nav-badge-1');
-    const nav2 = document.getElementById('nav-badge-2');
-    const nav3 = document.getElementById('nav-badge-3');
-
-    if (isDone) {
-      chip1.textContent = '✓ Выполнено'; chip1.className = 'state-chip';
-      chip2.textContent = '✓ Выполнено'; chip2.className = 'state-chip';
-      chip3.textContent = '✓ Вход сохранён'; chip3.className = 'state-chip';
-      bannerChip.textContent = '✓ Выполнено'; bannerChip.className = 'state-chip';
-      bannerTitle.textContent = 'Готово к подключению';
-      bannerSub.textContent = 'Установка работает на этом компьютере · все 3 шага выполнены';
-      progress.style.width = '100%';
-      loginBtn.textContent = 'Войти заново';
-      [nav1, nav2, nav3].forEach(b => { b.textContent = '✓'; b.classList.remove('pending'); });
-      document.getElementById('auth-session-state').textContent = 'ВХОД СОХРАНЁН';
-      document.getElementById('auth-session-state').className = 'diag-state';
-    } else {
-      chip1.textContent = 'Ожидает подключения'; chip1.className = 'state-chip pending';
-      chip2.textContent = 'Ожидает шага 1'; chip2.className = 'state-chip pending';
-      chip3.textContent = 'Ожидает входа'; chip3.className = 'state-chip pending';
-      bannerChip.textContent = 'Готово к настройке'; bannerChip.className = 'state-chip pending';
-      bannerTitle.textContent = 'Готово к подключению';
-      bannerSub.textContent = 'Установка работает на этом компьютере · выполните 3 шага по порядку';
-      progress.style.width = '18%';
-      loginBtn.textContent = 'Войти в ChatGPT';
-      [nav1, nav2, nav3].forEach((b, i) => { b.textContent = `0${i+1}`; b.classList.add('pending'); });
-      document.getElementById('auth-session-state').textContent = 'ТРЕБУЕТСЯ ВХОД';
-      document.getElementById('auth-session-state').className = 'diag-state warn';
-    }
-  }
-
-  presetDoneBtn.addEventListener('click', () => {
-    setInstallerPreset(true);
-    toast('Показано состояние завершённой установки (все шаги выполнены).');
-  });
-  presetFreshBtn.addEventListener('click', () => {
-    setInstallerPreset(false);
-    toast('Режим пошагового прохождения с нуля активирован.');
-  });
-
-  // Action Buttons
-  document.querySelectorAll('[data-action]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const action = btn.dataset.action;
-      const ip = ipInput.value.trim() || '192.168.1.151';
-      const port = document.getElementById('ssh-port').value.trim() || '22';
-
-      if (action === 'copy-url') {
-        const url = `http://${ip}:18080/`;
-        copyText(url, `Адрес ${url} скопирован в буфер обмена.`);
-      }
-
-      if (action === 'copy-code') {
-        const code = document.getElementById('pairing-code-display').textContent.trim();
-        copyText(code, `Код сопряжения ${code} скопирован.`);
-      }
-
-      if (action === 'check-fingerprint') {
-        const fpHash = document.getElementById('fp-hash');
-        fpHash.textContent = `Запрос ключа у ${ip}:${port}...`;
-        setTimeout(() => {
-          fpHash.textContent = `SHA256:9f4b2c8e11a7d04c5e8a33b91e2f0a1d7c6e4b2a (${ip}:${port} · ED25519)`;
-          toast(`Отпечаток SSH для ${ip}:${port} успешно проверен.`);
-        }, 380);
-      }
-
-      if (action === 'connect-ssh') {
-        const chip1 = document.getElementById('chip-step-1');
-        const nav1 = document.getElementById('nav-badge-1');
-        chip1.textContent = '✓ Выполнено';
-        chip1.className = 'state-chip';
-        nav1.textContent = '✓';
-        nav1.classList.remove('pending');
-        toast(`Отпечаток подтверждён. SSH-соединение с ${ip}:${port} установлено.`);
-      }
-
-      if (action === 'install-station') {
-        const progress = document.getElementById('install-progress');
-        const chip2 = document.getElementById('chip-step-2');
-        const nav2 = document.getElementById('nav-badge-2');
-        progress.style.width = '45%';
-        toast('Проверка совместимости, сохранение чатов и настройка автозапуска...');
-        setTimeout(() => {
-          progress.style.width = '100%';
-          chip2.textContent = '✓ Выполнено';
-          chip2.className = 'state-chip';
-          nav2.textContent = '✓';
-          nav2.classList.remove('pending');
-          toast('Установка на колонку успешно завершена. Существующие чаты сохранены.');
-        }, 650);
-      }
-
-      if (action === 'relogin-chatgpt') {
-        const chip3 = document.getElementById('chip-step-3');
-        const nav3 = document.getElementById('nav-badge-3');
-        const stateEl = document.getElementById('auth-session-state');
-        toast('Открытие отдельного окна браузера для входа на сайте ChatGPT...');
-        setTimeout(() => {
-          chip3.textContent = '✓ Вход сохранён';
-          chip3.className = 'state-chip';
-          nav3.textContent = '✓';
-          nav3.classList.remove('pending');
-          stateEl.textContent = 'ВХОД СОХРАНЁН';
-          stateEl.className = 'diag-state';
-          document.getElementById('banner-chip').textContent = '✓ Выполнено';
-          document.getElementById('banner-chip').className = 'state-chip';
-        }, 600);
-      }
-
-      if (action === 'check-service') {
-        const c1 = document.getElementById('service-check-1');
-        const c2 = document.getElementById('service-check-2');
-        const c3 = document.getElementById('service-check-3');
-        c1.textContent = 'ПРОВЕРКА...';
-        c2.textContent = 'ПРОВЕРКА...';
-        setTimeout(() => {
-          c1.textContent = 'АКТИВНА';
-          c2.textContent = 'ДОСТУПНА';
-          c3.textContent = 'СОХРАНЕНЫ';
-          toast('Служба на колонке работает исправно. Данные и чаты не затронуты.');
-        }, 420);
-      }
-    });
-  });
-</script>
+<script src="/app.js"></script>
 </body>
 </html>

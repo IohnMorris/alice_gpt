@@ -112,6 +112,7 @@ class ControlServer {
         if(key.empty()&&offset!=std::string::npos){offset+=16;auto next=cookie.find(';',offset);key=cookie.substr(offset,next==std::string::npos?next:next-offset);}
         if(!secret_equal(key,auth["key"].get<std::string>())){reply(fd,401,"{}");return;}
         if(method=="GET"&&path=="/api/status"){reply(fd,200,status().dump());return;}
+        if(method=="GET"&&path=="/api/pairing"){reply(fd,200,json{{"pairing_code",auth["code"]},{"port",port}}.dump());return;}
         if(method=="POST"&&path=="/api/command"){reply(fd,200,command(json::parse(body)).dump());return;}
         reply(fd,404,"{}");
     }

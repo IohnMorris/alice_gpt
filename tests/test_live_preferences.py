@@ -81,3 +81,16 @@ class LivePreferences(unittest.TestCase):
   with patch.object(cli,'load',return_value=c),patch.object(runtime,'update_preferences') as apply,patch.object(cli,'save') as save:
    self.assertEqual(cli.main(['native','settings','listen-on']),0)
   self.assertTrue(c['listen_led']);save.assert_called_once_with(c);apply.assert_called_once()
+
+class ExistingPhrases(unittest.TestCase):
+ def test_preserves_phrases_set_on_station(self):
+  import subprocess
+  from alisa_cli import install
+  from unittest.mock import Mock
+  result=subprocess.CompletedProcess([],0,'1\tпоговорим\n2\tновый чат\n3\tзакрыть\n4\tпредыдущий\n'.encode(),b'')
+  self.assertEqual(install.existing_phrases(Mock(run=Mock(return_value=result)))['open'],'поговорим')
+ def test_invalid_existing_phrases_stop_update(self):
+  import subprocess
+  from alisa_cli import install
+  from unittest.mock import Mock
+  with self.assertRaises(RuntimeError):install.existing_phrases(Mock(run=Mock(return_value=subprocess.CompletedProcess([],0,b'1\tbroken\n',b''))))

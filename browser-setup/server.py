@@ -19,8 +19,9 @@ steps={'connected':False,'installed':False,'vpn':False,'login':False}
 
 def publish(phase,message,panel=None):
     global state
+    previous_panel=state.get('panel') if steps.get('installed') else None
     state={'phase':phase,'message':message, 'steps':dict(steps)}
-    if panel:state['panel']=panel
+    if panel or previous_panel:state['panel']=panel or previous_panel
 
 def hostkey(host,port):
     transport=paramiko.Transport(socket.create_connection((host,port),timeout=6))
@@ -114,7 +115,14 @@ class Handler(BaseHTTPRequestHandler):
                         winssh.remember_password(c,password_value)
                         save(c)
                     pending.clear();steps.update(connected=True,installed=False,vpn=False,login=False)
-                    publish('connected','Подключение и права root проверены. Нажмите «Установить» — служба будет обновлена безопасно.')
+                    try:
+                        current=runtime.status(c)
+                        if current.get('agent_connected'):
+                            steps.update(installed=True,vpn=bool(c.get('vpn',{}).get('enabled')),login=bool(current.get('login_saved')))
+                            publish('installed','Служба работает. Можно открыть панель или обновить компоненты.',runtime.panel_url(c))
+                            return
+                    except Exception:pass
+                    publish('connected','Подключение и права root проверены. Можно установить службу.')
                 launch(connect,'Проверяем пароль и права root…')
             elif self.path=='/api/install':
                 if not steps['connected']:
@@ -125,7 +133,11 @@ class Handler(BaseHTTPRequestHandler):
                     except Exception:raise ValueError('Сначала подтвердите SSH-подключение.')
                 def do_install():
                     c=load('native')
-                    install.install(c,activate=True);autostart.set_enabled(c,True)
+                    def progress(stage,current,total):
+                        global state
+                        state={**state,'progress':{'stage':stage,'current':current,'total':total}}
+                    install.install(c,activate=True,progress_callback=progress)
+                    progress('Включаем автозапуск',0,0);autostart.set_enabled(c,True)
                     from alisa_cli.state import save
                     save(c);current=runtime.status(c)
                     if not current.get('agent_connected'):raise RuntimeError('service not ready')

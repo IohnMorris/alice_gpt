@@ -33,7 +33,27 @@ def native_files(station,model=None):
     for name in ['vpn.sh','boot.sh','native-call.sh']:files[TOOLS+'/'+name]=(ROOT/'station'/name).read_bytes()
     return files
 
-def install(config,activate=True,dry_run=False):
+def existing_phrases(station):
+    """Preserve phrases edited on the station when updating from a computer."""
+    result=station.run('cat '+NATIVE+'/commands.txt',check=False)
+    if result.returncode:return None
+    from .state import command_file
+    try:
+        lines=result.stdout.decode('utf-8').splitlines()
+        names={'1':'open','2':'new','3':'close','4':'previous'}
+        if len(lines)!=4:raise ValueError('incomplete phrases')
+        parsed={names[line.split('\t',1)[0]]:line.split('\t',1)[1] for line in lines}
+        if set(parsed)!=set(names.values()):raise ValueError('incomplete phrases')
+        command_file(parsed)
+        return parsed
+    except (UnicodeError,ValueError,KeyError,IndexError):
+        raise RuntimeError('Не удалось прочитать сохранённые фразы; установка остановлена, данные сохранены.') from None
+
+
+def install(config,activate=True,dry_run=False,progress_callback=None):
+    def report(stage,current=0,total=0):
+        if progress_callback:progress_callback(stage,current,total)
+    report('Проверяем колонку и совместимость')
     with ui.activity('Проверяю колонку и компоненты'):preflight=require(config)
     if not dry_run:
         from .firmware import apply_model
@@ -82,11 +102,17 @@ def install(config,activate=True,dry_run=False):
             files=native_files(s,preflight.get('model'))
             space=storage.report(config,vpn_engine=None,files=files);storage.require(space)
         if dry_run:return {'dry_run':True,'mode':'native','preflight':preflight,'verified_files':len(files),'storage':space}
+        report('Проверяем установленные компоненты')
         sizes=storage.remote_sizes(s,files)
         changed={path:data for path,data in files.items() if sizes.get(path,(0,''))[1]!=hashlib.sha256(data).hexdigest()}
         old_status=status(config) if s.run('test -x '+NATIVE+'/bin/alisa-standalone',check=False).returncode==0 else {}
         was_running=old_status.get('agent_connected',False)
+        from .state import STYLES
+        if was_running and old_status.get('led_style') in STYLES:config['led']=old_status['led_style']
         backup=HOME/'native/backups'/str(time.time_ns());saved={}
+        saved_phrases=existing_phrases(s)
+        if saved_phrases is not None:config['phrases']=saved_phrases
+        report('Сохраняем существующие компоненты')
         # No login files are included in this transaction.
         if changed:
             with ui.activity('Сохраняю копию изменяемых компонентов'):
@@ -102,8 +128,10 @@ def install(config,activate=True,dry_run=False):
                 with ui.activity('Копирую изменённые файлы') as progress:
                     for index,(remote,data) in enumerate(changed.items(),1):
                         progress(f'Копирую {index}/{len(changed)}: {Path(remote).name}')
+                        report('Копируем файлы',index-1,len(changed))
                         executable=remote.endswith(('.sh','.so')) or '/bin/' in remote
                         s.put(remote,data,0o700 if executable else 0o600)
+            report('Применяем настройки и проверяем клиент')
             with ui.activity('Применяю настройки и проверяю клиент'):
                 apply_settings(config)
                 if was_running and not changed and old_status.get('led_style')!=config['led']:
@@ -123,5 +151,6 @@ def install(config,activate=True,dry_run=False):
         result.update(files_updated=len(changed),files_unchanged=len(files)-len(changed))
         result['message']='Все файлы уже актуальны. Настройки применены; вход и чаты сохранены.' if not changed else 'Компоненты обновлены; вход и чаты сохранены.'
     if activate:
+        report('Запускаем службу')
         with ui.activity('Запускаю выбранный режим'):return start(config)
     return result
