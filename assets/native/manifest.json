@@ -5,7 +5,7 @@
   "audio_engine": "WebRTC NetEq",
   "revision": 5,
   "files": {
-    "native_agent.so": "f34fbf44e6002992e8a84836ff259f923ff1da00dc6746ba0259a7c3d4b4169a",
+    "native_agent.so": "00395cfb8b5dbb81bda7911b0f8d35eca064509781cbe208e671078da9283fd4",
     "indicator.sh": "f1fb07a3615ddf4af2dcded6526f800632b4ade1e6944e454ee67d77a6394f8c",
     "vqe_tap.so": "b897088cf000590e2c452d47896d18b0d9483b56d360078bfdaa960b609bd28e",
     "tts_gate.so": "3cf0263a73e934704e0ecc4c7a5a633610b284dbccffdd6db8cc14e5e9384d32",
