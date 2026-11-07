@@ -170,15 +170,24 @@
     .content { padding:32px 25px 48px; }
   }
   @media (max-width: 680px) {
-    body { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+    body { padding-bottom: calc(102px + env(safe-area-inset-bottom, 0px)); }
     .app { display:block; }
-    .sidebar { position:fixed; z-index:5; bottom:0; top:auto; left:0; right:0; height:auto; min-height:0; padding:8px max(8px, env(safe-area-inset-right, 0px)) calc(8px + max(8px, env(safe-area-inset-bottom, 0px))) max(8px, env(safe-area-inset-left, 0px)); display:block; border-top:1px solid rgba(225,239,228,.15); }
-    .brand { display:none; }
-    .nav { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:3px; overflow:visible; }
-    .nav button { width:100%; min-width:0; height:48px; padding:0; justify-content:center; border-radius:8px; }
+    .sidebar {
+      position:fixed; z-index:20; top:auto;
+      bottom:calc(12px + env(safe-area-inset-bottom, 0px));
+      left:max(12px, env(safe-area-inset-left, 0px));
+      right:max(12px, env(safe-area-inset-right, 0px));
+      height:auto; min-height:0; padding:6px; display:block;
+      border:1px solid rgba(225,239,228,.16); border-radius:18px;
+      box-shadow:0 8px 28px rgba(0,0,0,.22);
+    }
+    .brand, .sidebar-bottom { display:none; }
+    .nav { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:2px; overflow:visible; }
+    .nav button { display:flex; flex-direction:column; gap:3px; width:100%; min-width:0; height:54px; padding:4px 0; justify-content:center; align-items:center; border-radius:12px; }
     .nav button .nav-text { display:none; }
-    .nav svg { width:17px; }
-    .sidebar-bottom { display:none; }
+    .nav button::after { content:attr(data-mobile-label); display:block; max-width:100%; overflow:hidden; text-overflow:clip; white-space:nowrap; font-size:9px; line-height:1; letter-spacing:0; }
+    .nav svg { width:20px; height:20px; flex:none; }
+    .toast { bottom:calc(90px + env(safe-area-inset-bottom, 0px)); right:12px; left:12px; }
     .topbar { height:55px; padding:0 17px; }
     .local-label { font-size:0; }
     .local-dot { margin:0; }
@@ -196,7 +205,7 @@
     .form-row { grid-template-columns:1fr; gap:0; }
     .palette-grid { grid-template-columns:repeat(2,1fr); }
   }
-  @media (max-width: 390px) { .nav button .nav-text { display:none; } .side-stack { grid-template-columns:1fr; } }
+  @media (max-width: 390px) { .side-stack { grid-template-columns:1fr; } .nav button::after { font-size:8px; } }
 
   [data-theme="dark"] { color-scheme: dark; --ink:#e5ece6; --muted:#aab8ad; --muted-2:#93a399; --line:#35463b; --paper:#151e19; --surface:#202d25; --forest:#82b895; --forest-deep:#669c78; --sage:#2b4232; --shadow:none; }
   [data-theme="dark"] body { background:var(--paper); color:var(--ink); }
@@ -220,12 +229,12 @@
     </div>
     <div class="nav-label">Рабочее пространство</div>
     <nav class="nav" aria-label="Основная навигация">
-      <button class="active" data-page="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></svg><span class="nav-text">Обзор</span></button>
-      <button data-page="conversation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-7.5A7.5 7.5 0 0 1 10.5 6H12"/><path d="M15 3h6v6M21 3l-8 8"/></svg><span class="nav-text">Разговор</span></button>
-      <button data-page="voice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8"/></svg><span class="nav-text">Голос</span></button>
-      <button data-page="lighting"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 18h6m-5 3h4m-2-19a7 7 0 0 0-4 12.7c.6.4 1 1.1 1 1.8h6c0-.7.4-1.4 1-1.8A7 7 0 0 0 12 2z"/></svg><span class="nav-text">Подсветка</span></button>
-      <button data-page="phrases"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5.5h16v11H9l-5 3z"/><path d="M8 10h8M8 13.5h5"/></svg><span class="nav-text">Голосовые фразы</span></button>
-      <button data-page="diagnostics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V5m0 14h16"/><path d="m7 15 3-4 3 2 5-7"/></svg><span class="nav-text">Диагностика</span></button>
+      <button class="active" data-page="overview" data-mobile-label="Главная"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></svg><span class="nav-text">Обзор</span></button>
+      <button data-page="conversation" data-mobile-label="Чат"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-7.5A7.5 7.5 0 0 1 10.5 6H12"/><path d="M15 3h6v6M21 3l-8 8"/></svg><span class="nav-text">Разговор</span></button>
+      <button data-page="voice" data-mobile-label="Голос"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8"/></svg><span class="nav-text">Голос</span></button>
+      <button data-page="lighting" data-mobile-label="Свет"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 18h6m-5 3h4m-2-19a7 7 0 0 0-4 12.7c.6.4 1 1.1 1 1.8h6c0-.7.4-1.4 1-1.8A7 7 0 0 0 12 2z"/></svg><span class="nav-text">Подсветка</span></button>
+      <button data-page="phrases" data-mobile-label="Фразы"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5.5h16v11H9l-5 3z"/><path d="M8 10h8M8 13.5h5"/></svg><span class="nav-text">Голосовые фразы</span></button>
+      <button data-page="diagnostics" data-mobile-label="Проверка"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V5m0 14h16"/><path d="m7 15 3-4 3 2 5-7"/></svg><span class="nav-text">Диагностика</span></button>
     </nav>
     <div class="sidebar-bottom"><div class="device-kicker">Подключённое устройство</div><div class="device-name">Яндекс Станция</div><div class="device-meta">Локальная панель · ARM64</div></div>
   </aside>
