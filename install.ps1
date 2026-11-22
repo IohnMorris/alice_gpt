@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $taskUrl = 'https://raw.githubusercontent.com/IohnMorris/alice_gpt/main/AlisaVoice-Mini2-browser-preview.zip'
-$expected = '111a86d8caed7e25787c91dc7f9609e5be708e658cd8b85e8c5f45dce3250e77'
+$expected = 'a7f8d963b7de5147deaad4a671b4cac3e4e527470465d164127712d5cb8ca200'
 $base = Join-Path $env:LOCALAPPDATA 'AlisaVoice-Setup'
 $folder = Join-Path $base ([guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $folder -Force | Out-Null
@@ -22,8 +22,13 @@ try {
     $panel = Join-Path $folder 'AlisaVoice-Browser-Setup'
     $python = Join-Path $folder 'AlisaVoice-Mini2-test\windows\runtime\python.exe'
     if (-not (Test-Path -LiteralPath $python) -or -not (Test-Path -LiteralPath (Join-Path $panel 'server.py'))) { throw 'Комплект неполный.' }
+    $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+    try {
+        $listener.Start()
+        $port = $listener.LocalEndpoint.Port
+    } finally { $listener.Stop() }
     Write-Host 'Открываем локальный мастер установки…'
-    Start-Process -FilePath $python -ArgumentList '-B','-X','utf8','server.py' -WorkingDirectory $panel -WindowStyle Hidden
+    Start-Process -FilePath $python -ArgumentList '-B','-X','utf8','server.py',"$port" -WorkingDirectory $panel -WindowStyle Hidden
 } catch {
     Write-Error ('Установка не запущена: ' + $_.Exception.Message)
 }

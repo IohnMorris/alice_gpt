@@ -9,7 +9,8 @@ from alisa_cli.state import load, defaults
 from alisa_cli import winssh, install, autostart, runtime, vpn
 import paramiko
 
-PORT=8769
+PORT=int(sys.argv[1]) if len(sys.argv)>1 else 8769
+if not 1024<=PORT<=65535:raise ValueError('Invalid installer port')
 ORIGIN=f'http://127.0.0.1:{PORT}'
 TOKEN=secrets.token_urlsafe(32)
 LOCK=threading.Lock()

@@ -438,6 +438,6 @@
     "tests/test_voice_probe.py": "38f1bfb09f7a1c5269a993843e5b3c595f2804b8f3cc22cb8e0e5a493058fa7d",
     "tests/test_vpn_management.py": "cbad33e350baf612233aff61d1efa75d78727d6ee7a81ca08be464285c3037f8",
     "alisa_cli/winssh.py": "e652946599db53ba1c501ba97267d1d9c351f9c485d9390fd575d464b91827b2",
-    "browser-setup/server.py": "aab5a750e0f1d4453c20cb7f79eceae1e5d43075212dab20f10a2f0bb8e0de7f"
+    "browser-setup/server.py": "a1685ad5d086ccc3533f280334147cee3080a4751c3880e916c6c4b2a6cefcb7"
   }
 }
