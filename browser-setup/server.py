@@ -111,7 +111,11 @@ class Handler(BaseHTTPRequestHandler):
                     else:
                         from alisa_cli.state import save
                         password_value='' if blank else password
-                        if winssh.run(c,'id -u',password=password_value).stdout.strip()!=b'0':raise ValueError('SSH не даёт права root.')
+                        if blank:
+                            result=winssh.system_run(c,'id -u')
+                            if result.returncode or result.stdout.strip()!=b'0':raise ValueError('SSH без пароля не подтвердил вход root.')
+                            c['ssh_system']=True
+                        elif winssh.run(c,'id -u',password=password_value).stdout.strip()!=b'0':raise ValueError('SSH не даёт права root.')
                         winssh.remember_password(c,password_value)
                         save(c)
                     pending.clear();steps.update(connected=True,installed=False,vpn=False,login=False)

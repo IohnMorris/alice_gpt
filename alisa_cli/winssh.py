@@ -19,6 +19,16 @@ def password_environment(config):
         env['ALISA_TEMP_SSH_PASSWORD']=_passwords[endpoint]
     return env
 
+def system_run(config,command,data=None,timeout=60):
+    """Use the Windows OpenSSH client for passwordless/none-auth hosts."""
+    known=config.get('known_hosts')
+    args=['ssh','-T','-o','BatchMode=yes','-o','ConnectTimeout=8','-o','StrictHostKeyChecking=yes']
+    if known: args += ['-o','UserKnownHostsFile='+str(known)]
+    args += ['-p',str(config.get('port',2222)),(config.get('user') or 'root')+'@'+config['host'],command]
+    try:
+        return subprocess.run(args,input=data,capture_output=True,timeout=timeout,check=False)
+    except subprocess.TimeoutExpired: raise subprocess.TimeoutExpired('SSH',timeout) from None
+
 def library():
     try:import paramiko;return paramiko
     except ImportError:raise RuntimeError('Неполный Windows-пакет: отсутствует Paramiko. Повторите установку CLI.') from None
@@ -99,6 +109,10 @@ def connect(config,password=None):
     except (OSError,p.SSHException):client.close();raise PublicError('ssh_unreachable') from None
 
 def run(config,command,data=None,check=True,timeout=60,password=None):
+    if config.get('ssh_system') and password is None:
+        result=system_run(config,command,data,timeout)
+        if check and result.returncode: raise RuntimeError('Команда на колонке завершилась с кодом '+str(result.returncode))
+        return result
     client=connect(config,password);channel=None
     try:
         channel=client.get_transport().open_session(timeout=8);channel.settimeout(timeout);channel.exec_command(command)

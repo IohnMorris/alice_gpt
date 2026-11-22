@@ -437,6 +437,7 @@
     "tests/test_terminal_ui.py": "f7dc9e16ec25d596812a4ec271e988764b7575f9216a5b39e5a3a7ad2e4ea4d6",
     "tests/test_voice_probe.py": "38f1bfb09f7a1c5269a993843e5b3c595f2804b8f3cc22cb8e0e5a493058fa7d",
     "tests/test_vpn_management.py": "cbad33e350baf612233aff61d1efa75d78727d6ee7a81ca08be464285c3037f8",
-    "alisa_cli/winssh.py": "e538697b5c8198f87842c92b8df6f72252a7c7c42004d30faf8b9f419af607cd"
+    "alisa_cli/winssh.py": "90bfcda2536e13e3001fa7801db80ed85a0d0472eb41cf8e5d27731b4384b274",
+    "browser-setup/server.py": "b2b8d7a971a4e27e5a3b4ffe1889d8338fe46d969703ba09c617a7979c1b94eb"
   }
 }
