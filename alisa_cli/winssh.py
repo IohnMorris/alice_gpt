@@ -73,8 +73,13 @@ def connect(config,password=None):
             # commonly means a passwordless public key (agent or ~/.ssh key).
             # Let Paramiko use those keys first, then try true SSH none auth.
             try:
+                identity=config.get('identity')
+                if not identity:
+                    for candidate in (Path.home()/'.ssh/id_ed25519',Path.home()/'.ssh/id_rsa',Path.home()/'.ssh/id_ecdsa'):
+                        if candidate.is_file():
+                            identity=str(candidate);break
                 client.connect(config['host'],port=config.get('port',2222),username=config.get('user') or 'root',
-                               allow_agent=True,look_for_keys=True,timeout=8,banner_timeout=12,auth_timeout=12)
+                               key_filename=identity,allow_agent=True,look_for_keys=True,timeout=8,banner_timeout=12,auth_timeout=12)
             except p.AuthenticationException:
                 transport=p.Transport(socket.create_connection((config['host'],config.get('port',2222)),timeout=8))
                 client._transport=transport
