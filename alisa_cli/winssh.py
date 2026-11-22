@@ -69,13 +69,20 @@ def connect(config,password=None):
             password=os.environ.get('ALISA_TEMP_SSH_PASSWORD')
         identity=config.get('identity') if password is None else None
         if password=='':
-            transport=p.Transport(socket.create_connection((config['host'],config.get('port',2222)),timeout=8))
-            client._transport=transport
-            transport.start_client(timeout=12)
-            remote=transport.get_remote_server_key(); saved=known_keys(known,host_id(config)).get(remote.get_name())
-            if saved is None or saved.asbytes()!=remote.asbytes():raise PublicError('ssh_hostkey')
-            transport.auth_none(config.get('user') or 'root')
-            if not transport.is_authenticated():raise p.AuthenticationException()
+            # The installer labels this as "without a password", but Terminus
+            # commonly means a passwordless public key (agent or ~/.ssh key).
+            # Let Paramiko use those keys first, then try true SSH none auth.
+            try:
+                client.connect(config['host'],port=config.get('port',2222),username=config.get('user') or 'root',
+                               allow_agent=True,look_for_keys=True,timeout=8,banner_timeout=12,auth_timeout=12)
+            except p.AuthenticationException:
+                transport=p.Transport(socket.create_connection((config['host'],config.get('port',2222)),timeout=8))
+                client._transport=transport
+                transport.start_client(timeout=12)
+                remote=transport.get_remote_server_key(); saved=known_keys(known,host_id(config)).get(remote.get_name())
+                if saved is None or saved.asbytes()!=remote.asbytes():raise PublicError('ssh_hostkey')
+                transport.auth_none(config.get('user') or 'root')
+                if not transport.is_authenticated():raise p.AuthenticationException()
         else:
             client.connect(config['host'],port=config.get('port',2222),username=config.get('user') or 'root',
                            password=password,key_filename=str(identity) if identity else None,
