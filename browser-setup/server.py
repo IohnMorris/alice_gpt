@@ -45,6 +45,7 @@ def task(fn):
         from alisa_cli.errors import PublicError
         if isinstance(error,PublicError) and error.code=='ssh_auth':publish('failed','Колонка отклонила SSH-доступ. Проверьте пароль или приватный ключ. Если на компьютере уже есть рабочий ключ, выберите его в мастере.')
         elif isinstance(error,PublicError):publish('failed',str(error))
+        elif isinstance(error,RuntimeError) and str(error).startswith('SSH-ключ по этому адресу изменился.'):publish('failed',str(error))
         else:publish('failed','Шаг не выполнен. Проверьте подключение и данные SSH; сохранённые данные не удалены.')
     finally:LOCK.release()
 

@@ -47,8 +47,10 @@ def trust(config,confirm):
     from .state import HOME,write_private
     p=library();transport=None;endpoint=host_id(config)
     known=Path(config.get('known_hosts') or HOME/'ssh/known_hosts')
-    trusted={}
-    for file in (Path.home()/'.ssh/known_hosts',known):trusted.update(known_keys(file,endpoint))
+    system_known=Path.home()/'.ssh/known_hosts'
+    system_keys=known_keys(system_known,endpoint)
+    private_keys=known_keys(known,endpoint)
+    trusted={**private_keys,**system_keys}
     try:
         transport=p.Transport(socket.create_connection((config['host'],config.get('port',2222)),timeout=8))
         if trusted:
@@ -60,6 +62,13 @@ def trust(config,confirm):
     if trusted:
         saved=trusted.get(key.get_name())
         if saved is None or saved.asbytes()!=key.asbytes():raise RuntimeError('SSH-ключ по этому адресу изменился. Сохранённый ключ не заменён.')
+        system_key=system_keys.get(key.get_name())
+        private_key=private_keys.get(key.get_name())
+        if system_key and system_key.asbytes()==key.asbytes() and private_key and private_key.asbytes()!=key.asbytes():
+            # OpenSSH already trusts the confirmed key; preserve the older
+            # application-owned entry instead of replacing either file.
+            config['known_hosts']=str(system_known)
+            return
     else:
         fingerprint='SHA256:'+base64.b64encode(hashlib.sha256(key.asbytes()).digest()).decode().rstrip('=')
         if not confirm(config['host'],config.get('port',2222),key.get_name()+' '+fingerprint):raise RuntimeError('SSH-ключ не подтверждён. Настройки не изменены.')
